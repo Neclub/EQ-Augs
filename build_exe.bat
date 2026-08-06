@@ -25,12 +25,12 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-py -3 -m pip install -q "pyinstaller>=6.0"
+py -3 -m pip install -q "pyinstaller>=6.0" "Pillow>=10.0"
 if errorlevel 1 (
-  echo.
-  echo ERROR: pip install pyinstaller failed.
-  pause
-  exit /b 1
+    echo.
+    echo ERROR: pip install pyinstaller/Pillow failed.
+    pause
+    exit /b 1
 )
 
 echo.
