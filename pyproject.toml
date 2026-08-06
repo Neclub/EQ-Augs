@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eq-augs"
+dynamic = ["version"]
+description = "EverQuest Slot2 type 7/8 aug checker — inventory dumps vs raidloot BiS, ownership/farm list, anniversary filter"
+requires-python = ">=3.10"
+dependencies = [
+    "openpyxl>=3.1",
+    "pywebview>=5.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+eq-augs = "eq_augs.cli:main"
+eq-augs-gui = "eq_augs.web_gui:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "eq_augs.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+eq_augs = ["data/*.html", "data/gui/**", "data/weights/**", "assets/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

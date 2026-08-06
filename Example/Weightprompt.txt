@@ -1,0 +1,221 @@
+I need to redesign the augment weighting system for my EverQuest Type 7/8 Augment Advisor.
+
+The application already downloads and parses augment information from RaidLoot.com. Do NOT design the application, database, or UI. Focus ONLY on the weighting system and scoring logic.
+
+## Goal
+
+Design a flexible, data-driven weighting system that ranks augments for every EverQuest class based on the value of each stat.
+
+The weighting system should NOT contain hardcoded if/else statements for individual augments. Instead, every class should have a configurable weight profile that can be edited without changing source code.
+
+## Design Requirements
+
+Each class should have a dictionary of stat weights.
+
+Example:
+
+Warrior
+
+AC = 10.0
+HP = 9.5
+HeroicDEX = 8.5
+HeroicSTA = 7.5
+Endurance = 5.0
+Attack = 3.0
+Avoidance = 2.5
+Shielding = 2.0
+
+Wizard
+
+SpellDamage = 10.0
+Mana = 9.5
+HeroicINT = 8.5
+HP = 5.0
+Clairvoyance = 4.0
+
+The scoring engine should loop through every stat on an augment and calculate:
+
+Score += (StatValue × Weight)
+
+No stat should require special-case code.
+
+Missing stats should simply contribute zero.
+
+## Group classes by role
+
+Instead of starting with sixteen completely independent profiles, create base profiles for:
+
+Tank
+Warrior
+Shadow Knight
+Paladin
+
+Priest
+Cleric
+Druid
+Shaman
+
+Pure Caster
+Wizard
+Magician
+Necromancer
+Enchanter
+
+Melee DPS
+Rogue
+Monk
+Berserker
+
+Hybrid DPS
+Ranger
+Beastlord
+Bard
+
+Each class may override individual weights if needed.
+
+## Stats that should be considered
+
+AC
+HP
+Mana
+Endurance
+
+STR
+STA
+AGI
+DEX
+WIS
+INT
+CHA
+
+Heroic STR
+Heroic STA
+Heroic AGI
+Heroic DEX
+Heroic WIS
+Heroic INT
+Heroic CHA
+
+Attack
+Accuracy
+Combat Effects
+Avoidance
+Shielding
+Spell Shield
+DoT Shield
+Stun Resist
+Strike Through
+Heal Amount
+Spell Damage
+Clairvoyance
+
+## Weight Philosophy
+
+Tanks
+Prioritize:
+AC
+HP
+Heroic DEX
+Heroic STA
+Endurance
+
+Melee DPS
+Prioritize:
+Heroic DEX
+Attack
+Accuracy
+Combat Effects
+HP
+
+Hybrids
+Balance:
+Attack
+Mana
+Heroic DEX
+HP
+AC
+
+Priests
+Prioritize:
+Heal Amount
+Mana
+Heroic WIS
+HP
+Spell Damage
+
+Pure Casters
+Prioritize:
+Spell Damage
+Mana
+Heroic INT
+HP
+Clairvoyance
+
+## Additional Requirements
+
+Design the system so future expansions can easily adjust weight values.
+
+Support multiple profiles per class, such as:
+
+Raid
+Group
+Solo
+Custom
+
+Profiles should inherit from the base class profile and override only the stats that change.
+
+For example:
+
+Warrior Raid
+Warrior Group
+Warrior Solo
+
+should all inherit from Warrior Base.
+
+## Output Requested
+
+Produce:
+
+1. A recommended weight table for every class.
+2. A base profile for each archetype.
+3. Suggested overrides for individual classes.
+4. A recommended inheritance hierarchy.
+5. Suggestions for handling Heroic Stats versus regular stats.
+6. Suggestions for normalizing scores so augments from different expansions remain comparable.
+7. Recommendations for allowing users to customize or tune weights without breaking the scoring algorithm.
+
+Focus on producing a maintainable, extensible weighting system that closely reflects current EverQuest gearing priorities.
+```
+
+I would make **one enhancement** to this design: **split the weights into two layers**.
+
+* **Layer 1:** Role weights (Tank, Priest, Caster, Melee, Hybrid)
+* **Layer 2:** Class modifiers (Warrior, SK, Paladin, etc.)
+
+For example:
+
+```text
+Tank Base
+----------
+AC             10
+HP              9
+Heroic DEX      8
+Heroic STA      7
+
+Warrior Modifier
+----------------
+AC            +1
+Heroic DEX    +1
+
+Shadow Knight Modifier
+----------------------
+Mana          +2
+Spell Damage  +1
+
+Paladin Modifier
+----------------
+Heal Amount   +2
+Mana          +2
+```
+
+This approach means if the EverQuest meta changes (for example, Heroic Agility becomes more valuable for tanks in a future expansion), you only update the **Tank Base** profile rather than editing three separate class profiles. It's significantly easier to maintain over multiple expansions.

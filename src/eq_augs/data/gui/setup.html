@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EQ Augs — Slot2 Checker</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.check-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="header-brand">
+      <img id="logo" alt="EQ" width="44" height="44">
+      <div>
+        <h1>EQ Augs <span class="badge" id="versionBadge"></span></h1>
+        <div class="subtitle">Slot2 type 7/8 augs • raidloot BiS • ownership / farm list</div>
+      </div>
+    </div>
+    <button type="button" class="help-link" id="helpBtn">Help ▾</button>
+  </header>
+
+  <div id="helpMenu" class="help-menu hidden">
+    <button type="button" id="helpAbout">About EQ Augs…</button>
+  </div>
+
+  <div class="workspace">
+    <section class="panel panel-characters">
+      <div class="panel-header files">Characters</div>
+      <div class="panel-body panel-body-roster">
+        <div class="roster-shell" id="rosterShell">
+          <ul class="roster-list" id="rosterList"></ul>
+          <div class="empty-state" id="emptyState">
+            <span class="icon">📁</span>
+            <span>Add inventory dump files to begin</span>
+          </div>
+        </div>
+        <div class="toolbar toolbar-folder">
+          <button type="button" class="btn btn-primary" id="btnFolder">EQ Folder</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="settings-column">
+      <section class="panel">
+        <div class="panel-header options">Aug options</div>
+        <div class="panel-body">
+          <label class="check-row">
+            <input type="checkbox" id="artisansPrize">
+            <span>I own Artisan's Prize (Ear BiS)</span>
+          </label>
+          <div class="hint">Artisan's Prize is Ear-only and hard to obtain. When checked, Ear Slot2 recommends it first.</div>
+          <label class="check-row">
+            <input type="checkbox" id="includeAnniversary">
+            <span>Include Anniversary augs</span>
+          </label>
+          <div class="hint">Gems of Distant Echoes are only sold during the anniversary event. Leave unchecked to exclude them from recommendations.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header output">Output folder</div>
+        <div class="panel-body">
+          <div class="output-row">
+            <input type="text" class="text-input" id="outputPath" placeholder="Save location…">
+            <button type="button" class="btn btn-secondary" id="btnBrowse">Browse…</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="roster-controls">
+        <button type="button" class="btn btn-secondary" id="btnUp">Up</button>
+        <button type="button" class="btn btn-secondary" id="btnDown">Down</button>
+        <button type="button" class="btn btn-secondary" id="btnRemove">Remove</button>
+        <button type="button" class="btn btn-secondary" id="btnClear">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div class="status" id="status">Ready • No files loaded</div>
+    <div class="action-bar-right">
+      <div class="chip-row output-format" id="outputFormatChips" role="group" aria-label="Output format">
+        <button type="button" class="chip" id="chipFormatExcel" data-format="excel">Excel</button>
+        <button type="button" class="chip" id="chipFormatHtml" data-format="html">HTML</button>
+        <button type="button" class="chip on" id="chipFormatBoth" data-format="both">Both</button>
+      </div>
+      <button type="button" class="btn btn-primary" id="btnGenerate">Generate Report</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="setup.js"></script>
+</body>
+</html>
