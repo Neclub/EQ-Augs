@@ -1,0 +1,44 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -q -e .
+          python -m pip install -q "pyinstaller>=6.0"
+
+      - name: Build executable
+        run: python scripts/run_pyinstaller.py
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(python scripts/print_package_version.py)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: EQ Augs ${{ steps.version.outputs.version }}
+          files: dist/EQAugs-${{ steps.version.outputs.version }}.exe
+          generate_release_notes: true
+          make_latest: true
