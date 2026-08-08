@@ -1,19 +1,22 @@
 # EQ Augs
 
 EverQuest **Slot2 type 7/8** aug checker: compare inventory dumps against live
-[raidloot.com](https://www.raidloot.com) rankings, with Charm/Range awareness,
+[raidloot.com](https://www.raidloot.com) rankings, with Charm/Range/Feet awareness,
 ownership / need-to-farm tracking, and optional anniversary gems.
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Features
 
 - Parse `*-Inventory.txt` dumps for equipped type 7/8 augs (socket map via raidloot / EQ Resource).
 - Class (and Dex / INT / WIS catalog) from filename or **equipped Chest** armor.
-- BiS loadout with **Range/Charm first**, Lore uniqueness, and cross-slot **moves**.
+- BiS loadout with **priority holes first** (Range → Charm → Feet when high-AC
+  applies), Lore uniqueness, and cross-slot **moves**. General slots share a pool —
+  best owned/farmable set equipped, no general↔general reshuffle.
 - **Artisan's Prize** Ear BiS when marked owned.
 - **Include Anniversary** — optional; names containing `Gem of Distant Echoes` are excluded by default.
-- **Owned / Need to farm** — recommendations checked against the full inventory dump (bags, bank, equipped); moves from Range/Charm count as owned.
+- **Owned / Need to farm** — recommendations checked against the full inventory dump
+  (bags, bank, equipped); moves from priority slots (and pieces they free) count as owned.
 - Item links and expansion names from **EQ Resource** (`items.eqresource.com`).
 - Excel + HTML reports (upgrade table, Need to Farm sheet/section, ranked reference).
 
@@ -36,7 +39,7 @@ One-file Windows build:
 build_exe.bat
 ```
 
-Output: `dist\EQAugs-0.2.0.exe`
+Output: `dist\EQAugs-0.3.0.exe`
 
 ## Aug options (GUI)
 

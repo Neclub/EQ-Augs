@@ -339,6 +339,7 @@ def test_only_recommends_missing_ideal_augs():
 
 
 def test_equipped_aug_not_recommended_elsewhere_when_ideal():
+    """Ideal-loadout piece on a general slot stays put (no general reshuffle)."""
     cat = _catalog().augs
     slots = ["Head", "Feet"]
     current = {
@@ -354,6 +355,79 @@ def test_equipped_aug_not_recommended_elsewhere_when_ideal():
     )
     assert assigned["Head"].item_id == 175572
     assert assigned["Feet"] is None or assigned["Feet"].item_id != 175572
+
+
+def test_no_general_to_general_reshuffle_for_exact_homes():
+    """Best owned set stays equipped; do not swap general holes to match ideal homes."""
+    cat = _catalog().augs
+    slots = ["Head", "Feet", "Range", "Charm"]
+    current = {
+        "Head": Slot2Aug(
+            gear_slot="Head",
+            name="Acrobat's Gem of Unraveling Order",
+            item_id=175572,
+        ),
+        "Feet": Slot2Aug(gear_slot="Feet", name=None, item_id=None),
+        "Range": Slot2Aug(gear_slot="Range", name=None, item_id=None),
+        "Charm": Slot2Aug(gear_slot="Charm", name=None, item_id=None),
+    }
+    assigned = assign_slot_recommendations(
+        slots, cat, artisans_prize_owned=False, current_by_slot=current
+    )
+    # Acrobat's is kept on Head; Mist fills the empty hole — both ideals equipped.
+    assert assigned["Head"].item_id == 175572
+    assert assigned["Feet"] is not None
+    assert assigned["Feet"].item_id == 175369
+
+
+def test_feet_priority_claims_bis_for_war():
+    """WAR Feet is a priority hole: high-AC BiS is claimed before general slots."""
+    cat = _catalog().augs
+    slots = ["Head", "Arms", "Feet", "Range", "Charm"]
+    ideal = build_ideal_loadout(
+        slots, cat, artisans_prize_owned=False, class_abbr="WAR"
+    )
+    assert ideal["Range"].item_id == 175169
+    # After Range/Charm, Feet claims next-best AC (Acrobat's), not Arms.
+    assert ideal["Feet"].item_id == 175572
+    assert ideal["Arms"] is None or ideal["Arms"].item_id != 175572
+
+    current = {
+        "Arms": Slot2Aug(
+            gear_slot="Arms",
+            name="Acrobat's Gem of Unraveling Order",
+            item_id=175572,
+        ),
+        "Feet": Slot2Aug(gear_slot="Feet", name=None, item_id=None),
+        "Head": Slot2Aug(gear_slot="Head", name=None, item_id=None),
+        "Range": Slot2Aug(gear_slot="Range", name=None, item_id=None),
+        "Charm": Slot2Aug(gear_slot="Charm", name=None, item_id=None),
+    }
+    assigned = assign_slot_recommendations(
+        slots,
+        cat,
+        artisans_prize_owned=False,
+        class_abbr="WAR",
+        current_by_slot=current,
+    )
+    assert assigned["Feet"].item_id == 175572
+    assert assigned["Arms"] is None or assigned["Arms"].item_id != 175572
+
+
+def test_feet_not_priority_for_rog():
+    """ROG Feet stays in the general pool (no high-AC priority claim)."""
+    from eq_augs.slots import priority_aug_slots
+
+    assert priority_aug_slots("ROG") == ("Range", "Charm")
+    assert priority_aug_slots("WAR") == ("Range", "Charm", "Feet")
+
+    cat = _catalog().augs
+    slots = ["Head", "Arms", "Feet", "Range", "Charm"]
+    ideal_rog = build_ideal_loadout(
+        slots, cat, artisans_prize_owned=False, class_abbr="ROG"
+    )
+    # Without Feet priority, Arms (earlier in report order) can take Acrobat's.
+    assert ideal_rog["Arms"].item_id == 175572
 
 
 def test_feet_high_ac_for_war():

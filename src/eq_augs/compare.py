@@ -21,10 +21,10 @@ from eq_augs.profiles import (
 )
 from eq_augs.raidloot import AugCandidate, CatalogResult, augs_for_slot
 from eq_augs.slots import (
-    AUG_ASSIGNMENT_ORDER,
     EAR_REPORT_SLOTS,
-    PRIORITY_AUG_SLOTS,
     REPORT_SLOTS,
+    aug_assignment_order,
+    priority_aug_slots,
 )
 from eq_augs.weights import (
     rank_key,
@@ -330,9 +330,9 @@ def recommend_for_slot(
     )
 
 
-def _slot_order(gear_slots: list[str]) -> list[str]:
+def _slot_order(gear_slots: list[str], class_abbr: str | None = None) -> list[str]:
     present = set(gear_slots)
-    order = [s for s in AUG_ASSIGNMENT_ORDER if s in present]
+    order = [s for s in aug_assignment_order(class_abbr) if s in present]
     for slot in gear_slots:
         if slot not in order:
             order.append(slot)
@@ -348,7 +348,7 @@ def build_ideal_loadout(
     shield_secondary: bool = False,
 ) -> dict[str, AugCandidate | None]:
     """Absolute BiS unique assignment ignoring what is currently equipped."""
-    order = _slot_order(gear_slots)
+    order = _slot_order(gear_slots, class_abbr)
     unavailable: set[int] = set()
     ideal: dict[str, AugCandidate | None] = {}
 
@@ -392,17 +392,22 @@ def assign_slot_recommendations(
     """
     Recommend only ideal BiS augs the character is missing.
 
-    1. Build the ideal unique loadout (Range/Charm claimed first).
-    2. Priority slots (Range, Charm) pull their ideal aug even when it is
-       currently equipped in another slot (suggest a move).
-    3. Other slots keep an equipped ideal piece unless it was claimed above.
-    4. Remaining missing ideal augs fill empty holes first, then non-ideal
+    1. Build the ideal unique loadout (Range/Charm/Feet-when-needed first).
+    2. Priority slots pull their ideal aug even when it is currently equipped
+       in another slot (suggest a move). Priority = Range, Charm, and Feet
+       when the high-AC overlay applies — few augs fit those holes.
+    3. Other slots claim their ideal only when it sits on a priority slot that
+       does not need it (displaced piece moves into the general pool).
+    4. General slots keep any equipped ideal-loadout piece (no general↔general
+       reshuffle); the best owned/farmable set matters more than exact homes.
+    5. Remaining missing ideal augs fill empty holes first, then non-ideal
        currents — priority slots before general slots.
-    5. Never recommend an aug worse than the slot's current (by slot rank key).
+    6. Never recommend an aug worse than the slot's current (by slot rank key).
     """
     current_by_slot = current_by_slot or {}
-    order = _slot_order(gear_slots)
-    priority = {s for s in PRIORITY_AUG_SLOTS if s in order}
+    order = _slot_order(gear_slots, class_abbr)
+    priority_slots = tuple(s for s in priority_aug_slots(class_abbr) if s in order)
+    priority = set(priority_slots)
 
     ideal = build_ideal_loadout(
         gear_slots,
@@ -438,9 +443,7 @@ def assign_slot_recommendations(
         return None
 
     # Priority slots claim their ideal BiS, including moves from other slots.
-    for slot in PRIORITY_AUG_SLOTS:
-        if slot not in order:
-            continue
+    for slot in priority_slots:
         ideal_aug = ideal.get(slot)
         if ideal_aug is None:
             continue
@@ -454,10 +457,11 @@ def assign_slot_recommendations(
             assigned[slot] = ideal_aug
             claimed_ids.add(ideal_aug.item_id)
 
-    # Non-priority slots claim their ideal when it sits on Range/Charm and that
-    # priority slot does not need it as its own ideal (displaced piece moves down).
+    # Non-priority slots claim their ideal when it sits on a priority slot and
+    # that priority slot does not need it as its own ideal (displaced piece
+    # moves into the general pool).
     for slot in order:
-        if slot in assigned or slot in PRIORITY_AUG_SLOTS:
+        if slot in assigned or slot in priority:
             continue
         ideal_aug = ideal.get(slot)
         if ideal_aug is None or ideal_aug.item_id in claimed_ids:
@@ -465,7 +469,7 @@ def assign_slot_recommendations(
         source = _equipped_slot_for(ideal_aug.item_id)
         if source is None or source == slot:
             continue
-        if source not in PRIORITY_AUG_SLOTS:
+        if source not in priority:
             continue
         source_ideal = ideal.get(source)
         # Do not steal a piece that is the source slot's own ideal.
@@ -474,8 +478,9 @@ def assign_slot_recommendations(
         assigned[slot] = ideal_aug
         claimed_ids.add(ideal_aug.item_id)
 
-    # Keep ideal pieces where they already sit — except priority slots holding a
-    # non-ideal piece (those stay free for a better Range/Charm BiS).
+    # Keep ideal-loadout pieces where they already sit on general slots —
+    # except priority slots holding a non-ideal piece (those stay free for
+    # their constrained BiS).
     for slot in order:
         if slot in assigned:
             continue
@@ -485,7 +490,7 @@ def assign_slot_recommendations(
         if cur.item_id not in ideal_ids or cur.item_id in claimed_ids:
             continue
         slot_ideal = ideal.get(slot)
-        if slot in PRIORITY_AUG_SLOTS and (
+        if slot in priority and (
             slot_ideal is None or cur.item_id != slot_ideal.item_id
         ):
             continue

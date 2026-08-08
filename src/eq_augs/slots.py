@@ -90,9 +90,33 @@ ALL_GEAR_SLOTS: frozenset[str] = frozenset(
 EAR_REPORT_SLOTS: frozenset[str] = frozenset({"Ear-1", "Ear-2", "Ear"})
 
 # Range and Charm first — few augs fit those holes, so their BiS is claimed before
-# general slots. Remaining order follows the report layout.
+# general slots. Feet joins that priority set when the high-AC overlay applies
+# (see ``priority_aug_slots``). Remaining order follows the report layout.
 PRIORITY_AUG_SLOTS: tuple[str, ...] = ("Range", "Charm")
 
 AUG_ASSIGNMENT_ORDER: tuple[str, ...] = PRIORITY_AUG_SLOTS + tuple(
     s for s in REPORT_SLOTS if s not in PRIORITY_AUG_SLOTS
 )
+
+
+def priority_aug_slots(class_abbr: str | None = None) -> tuple[str, ...]:
+    """
+    Slots that claim BiS first because fewer augs fit them.
+
+    Always Range then Charm. Feet is included when the class uses the Feet
+    high-AC overlay (WAR/MNK/RNG/BST/BRD).
+    """
+    if class_abbr:
+        from eq_augs.weights import uses_feet_overlay
+
+        if uses_feet_overlay(class_abbr):
+            return ("Range", "Charm", "Feet")
+    return PRIORITY_AUG_SLOTS
+
+
+def aug_assignment_order(class_abbr: str | None = None) -> tuple[str, ...]:
+    """Full slot claim order: priority holes first, then remaining report slots."""
+    priority = priority_aug_slots(class_abbr)
+    rest = tuple(s for s in REPORT_SLOTS if s not in priority)
+    return priority + rest
+

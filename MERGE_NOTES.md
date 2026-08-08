@@ -3,15 +3,16 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.2.0`
+**Standalone version:** `0.3.0`
 
 ## Purpose of this app
 
 - Parse EverQuest `*-Inventory.txt` dumps for **equipped type 7/8** augs (usually Slot2;
   socket map may use another dump SlotN).
 - Live-fetch ranked type 7/8 candidates from raidloot.com (Dex / INT / WIS filters).
-- Recommend BiS per gear slot with **Charm/Range** restrictions; **Primary/Secondary
-  weapons ignored**; **shield Secondary** uses Shield Only augs.
+- Recommend BiS per gear slot with **Charm/Range** (and **Feet** when high-AC)
+  priority holes; **Primary/Secondary weapons ignored**; **shield Secondary** uses
+  Shield Only augs. General slots share the best owned/farmable set.
 - Special-case **Artisan's Prize** (item id `88785`, Ear-only) via an ownership checkbox.
 - Optional **anniversary** filter: exclude `Gem of Distant Echoes` names unless enabled.
 - Track **owned** recommendations (full dump) and a **Need to farm** list; EQ Resource
@@ -23,7 +24,7 @@ This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) in
 | EQ Augs module | Suggested Inventory Parser location | Notes |
 |----------------|-------------------------------------|-------|
 | `eq_augs.parser` | Extend `inventory_parser.parser` | Add `extract_slot2_augs`, `collect_owned_item_ids`; keep IP's `extract_equipped_items` (skips `-Slot*`) unchanged |
-| `eq_augs.slots` | Reuse `inventory_parser.slots` | `EQUIPMENT_SLOT_BASES`, `REPORT_SLOTS` ≡ `TEAM_GEAR_SLOTS` |
+| `eq_augs.slots` | Reuse `inventory_parser.slots` | `EQUIPMENT_SLOT_BASES`, `REPORT_SLOTS` ≡ `TEAM_GEAR_SLOTS`; bring `priority_aug_slots` / `aug_assignment_order` |
 | `eq_augs.profiles` | `inventory_parser.slot2_augs.profiles` | New; class→Dex/INT/WIS map |
 | `eq_augs.anniversary` | `inventory_parser.slot2_augs.anniversary` | New; Distant Echoes gem filter |
 | `eq_augs.raidloot` | `inventory_parser.slot2_augs.raidloot` | New; fetch/cache/parse |
@@ -132,7 +133,8 @@ vendor gems (time-limited). Module: `eq_augs.anniversary`.
 - `collect_owned_item_ids` — every non-empty item ID in the dump (bags, bank, equipped).
 - Recommended upgrades show **Owned**, **Move from {slot}**, or **Need to farm**.
 - **Need to farm** list / Excel sheet = recommended upgrades whose ID is not owned
-  (and not a cross-slot move of an already-equipped piece).
+  (and not a cross-slot move of an already-equipped piece — including pieces freed
+  when a priority slot takes a better BiS).
 - Item hyperlinks → `https://items.eqresource.com/items.php?id={id}`.
 - Expansion from EQ Resource `expacimages/{code}.jpg` for recommended IDs only.
 
@@ -142,6 +144,10 @@ For classes **WAR, MNK, RNG, BST, BRD**, Feet Slot2 uses an **AC-heavy slot
 weight overlay** (see `data/weights/slot_overlays.json`) so high-AC augs outrank
 pure focus-heroic picks. Ranking otherwise uses role → class weighted scores
 (`eq_augs.weights`).
+
+Those same classes also treat **Feet as a priority assignment slot** (after Range
+and Charm): its BiS is claimed before general holes because fewer augs are
+competitive there under the AC overlay.
 
 - Requires class abbr on the inventory filename (`{Char}_{Server}-WAR-Inventory.txt`),
   roster `classAbbr`, or Chest-detected class; without class, the profile default
@@ -165,14 +171,16 @@ Recommendations rank legal (slot-fitting) augs by:
 
 Recommendations treat the character's equipped type 7/8 augs **as a set**:
 
-1. Build an **ideal unique loadout** with **Range → Charm → remaining slots**
-   first (few augs fit Range/Charm).
-2. **Range/Charm** claim their ideal BiS even when that aug is equipped elsewhere —
-   recommend **moving** it there and replacing the donor slot.
-3. When Range/Charm will take a **better missing** BiS, a displaced piece that is
-   another slot's ideal may be recommended as a **move** (Owned), not farmed again.
-4. Other ideal pieces already equipped on general slots are kept unless claimed by
-   Range/Charm (no general↔general reshuffle).
+1. Build an **ideal unique loadout** with **Range → Charm → Feet (when high-AC
+   overlay applies) → remaining slots** first (few augs fit those holes).
+2. **Priority slots** (Range, Charm, Feet-when-needed) claim their ideal BiS even
+   when that aug is equipped elsewhere — recommend **moving** it there and
+   replacing the donor slot.
+3. When a priority slot will take a **better missing** BiS, a displaced piece that
+   is another slot's ideal may be recommended as a **move** (Owned), not farmed again.
+4. Ideal pieces already equipped on **general** slots are kept unless claimed by a
+   priority slot (no general↔general reshuffle). What matters is that the best
+   owned/farmable set is equipped, not which general hole holds which piece.
 5. Only **missing** ideal augs are otherwise recommended — empty holes first,
    then non-ideal currents (priority slots before general).
 6. Never recommend an aug that ranks worse than the slot's current aug.
@@ -274,7 +282,7 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 
 - `tests/test_parser.py` — Slot2 extraction + owned IDs against `Example/Inventory Dumps/`
 - `tests/test_raidloot.py` — slot restriction strings + HTML fixture
-- `tests/test_compare.py` — Artisan's Prize, Charm/Range moves, displaced Range→Head
+- `tests/test_compare.py` — Artisan's Prize, Charm/Range/Feet priority moves, displaced Range→Head
 - `tests/test_item_sockets.py` — parent socket map parse + Face evolver Slot4
 - `tests/test_eqresource_augs.py` — EQ Resource stats + expansion parse + ownership
 - `tests/test_anniversary.py` — Distant Echoes gem filter
@@ -294,7 +302,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.2.0`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.0`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.
