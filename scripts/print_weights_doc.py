@@ -117,6 +117,11 @@ def main() -> None:
         if ov.get("require_shield"):
             out.append("  require_shield: true")
         out.append(fmt_weights(ov.get("modifiers") or {}))
+        if ov.get("id") == "feet_high_ac":
+            out.append(
+                "  note: effective Feet weights become AC-only "
+                "(other stats dropped after merge)"
+            )
 
     out.append("")
     out.append("4. EFFECTIVE WEIGHTS BY CLASS (Head slot — no overlay)")

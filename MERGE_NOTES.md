@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.0`
+**Standalone version:** `0.3.1`
 
 ## Purpose of this app
 
@@ -141,9 +141,10 @@ vendor gems (time-limited). Module: `eq_augs.anniversary`.
 ## Feet high-AC rule
 
 For classes **WAR, MNK, RNG, BST, BRD**, Feet Slot2 uses an **AC-heavy slot
-weight overlay** (see `data/weights/slot_overlays.json`) so high-AC augs outrank
-pure focus-heroic picks. Ranking otherwise uses role → class weighted scores
-(`eq_augs.weights`).
+weight overlay** (see `data/weights/slot_overlays.json` + `_apply_feet_ac_dominance`):
+**AC is boosted and scoring becomes AC-only** for that slot, so any AC edge beats
+focus/ATK/HP differences. Equal-AC ties still break on HP then name via `rank_key`.
+Ranking otherwise uses role → class weighted scores (`eq_augs.weights`).
 
 Those same classes also treat **Feet as a priority assignment slot** (after Range
 and Charm): its BiS is claimed before general holes because fewer augs are
@@ -282,6 +283,7 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 
 - `tests/test_parser.py` — Slot2 extraction + owned IDs against `Example/Inventory Dumps/`
 - `tests/test_raidloot.py` — slot restriction strings + HTML fixture
+- `tests/test_weights.py` — role/class merge, Feet AC-only overlay, shield overlay
 - `tests/test_compare.py` — Artisan's Prize, Charm/Range/Feet priority moves, displaced Range→Head
 - `tests/test_item_sockets.py` — parent socket map parse + Face evolver Slot4
 - `tests/test_eqresource_augs.py` — EQ Resource stats + expansion parse + ownership
@@ -302,7 +304,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.0`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.1`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.

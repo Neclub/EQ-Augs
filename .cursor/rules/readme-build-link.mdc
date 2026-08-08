@@ -1,0 +1,23 @@
+---
+description: Keep README GitHub build download link in sync with package version
+alwaysApply: true
+---
+
+# README current build link
+
+Whenever `__version__` changes (or docs mention the package version), update
+`README.md` so GitHub visitors always get a download link for the current build:
+
+1. Set **Version:** to match `src/eq_augs/__init__.py` `__version__`.
+2. Set **Current build:** to a direct download that uses that same version:
+
+```markdown
+**Version:** X.Y.Z
+**Current build:** [EQAugs-X.Y.Z.exe](https://github.com/Neclub/EQ-Augs/releases/latest/download/EQAugs-X.Y.Z.exe)
+([all releases](https://github.com/Neclub/EQ-Augs/releases/latest))
+```
+
+3. Keep the local build path example (`dist\EQAugs-X.Y.Z.exe`) on the same version.
+4. Keep `MERGE_NOTES.md` standalone version strings aligned when bumping.
+
+Do not remove the **Current build** link from the README.

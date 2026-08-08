@@ -4,7 +4,9 @@ EverQuest **Slot2 type 7/8** aug checker: compare inventory dumps against live
 [raidloot.com](https://www.raidloot.com) rankings, with Charm/Range/Feet awareness,
 ownership / need-to-farm tracking, and optional anniversary gems.
 
-**Version:** 0.3.0
+**Version:** 0.3.1  
+**Current build:** [EQAugs-0.3.1.exe](https://github.com/Neclub/EQ-Augs/releases/latest/download/EQAugs-0.3.1.exe)
+([all releases](https://github.com/Neclub/EQ-Augs/releases/latest))
 
 ## Features
 
@@ -13,6 +15,8 @@ ownership / need-to-farm tracking, and optional anniversary gems.
 - BiS loadout with **priority holes first** (Range → Charm → Feet when high-AC
   applies), Lore uniqueness, and cross-slot **moves**. General slots share a pool —
   best owned/farmable set equipped, no general↔general reshuffle.
+- **Feet high-AC classes** (WAR/MNK/RNG/BST/BRD): Feet scoring is **AC-only** so any
+  AC edge beats focus/ATK/HP.
 - **Artisan's Prize** Ear BiS when marked owned.
 - **Include Anniversary** — optional; names containing `Gem of Distant Echoes` are excluded by default.
 - **Owned / Need to farm** — recommendations checked against the full inventory dump
@@ -39,7 +43,7 @@ One-file Windows build:
 build_exe.bat
 ```
 
-Output: `dist\EQAugs-0.3.0.exe`
+Output: `dist\EQAugs-0.3.1.exe`
 
 ## Aug options (GUI)
 

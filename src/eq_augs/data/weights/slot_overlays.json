@@ -6,17 +6,7 @@
       "slots": ["Feet"],
       "classes": ["WAR", "MNK", "RNG", "BST", "BRD"],
       "modifiers": {
-        "ac": 40.0,
-        "hp": -8.0,
-        "hdex": -8.0,
-        "hint": -8.0,
-        "hwis": -8.0,
-        "atk": -3.0,
-        "accuracy": -2.0,
-        "combat_effects": -2.0,
-        "mana": -2.0,
-        "spell_damage": -2.0,
-        "heal_amount": -2.0
+        "ac": 80.0
       }
     },
     {

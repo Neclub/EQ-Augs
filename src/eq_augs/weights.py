@@ -145,6 +145,7 @@ def resolve_weights(
 
     slot_base = _gear_slot_base(gear_slot)
     overlay_mods: dict[str, float] = {}
+    feet_ac_priority = False
     for overlay in overlays_doc.get("overlays") or []:
         if not isinstance(overlay, dict):
             continue
@@ -158,6 +159,8 @@ def resolve_weights(
                 continue
         if overlay.get("require_shield") and not secondary_is_shield:
             continue
+        if overlay.get("id") == "feet_high_ac":
+            feet_ac_priority = True
         for k, v in (overlay.get("modifiers") or {}).items():
             overlay_mods[k] = float(overlay_mods.get(k, 0.0)) + float(v)
 
@@ -172,7 +175,20 @@ def resolve_weights(
             for k, v in per.items():
                 flat[k] = float(flat.get(k, 0.0)) + float(v)
 
-    return _merge_weight_maps(role_base, class_mods, overlay_mods, flat)
+    merged = _merge_weight_maps(role_base, class_mods, overlay_mods, flat)
+    if feet_ac_priority:
+        return _apply_feet_ac_dominance(merged)
+    return merged
+
+
+def _apply_feet_ac_dominance(weights: dict[str, float]) -> dict[str, float]:
+    """
+    For Feet on high-AC classes, ranking is AC-only.
+
+    Other role/class weights are dropped so focus/HP/ATK cannot outweigh AC.
+    Equal-AC ties still break via ``rank_key`` (HP, then AC, then name).
+    """
+    return {"ac": float(weights.get("ac", 0.0))}
 
 
 def score_aug(aug: AugCandidate, weights: Mapping[str, float]) -> float:

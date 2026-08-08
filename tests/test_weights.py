@@ -49,6 +49,14 @@ def test_feet_overlay_war_not_rog():
     assert rog_feet["ac"] == rog_head["ac"]
 
 
+def test_feet_ac_dominates_other_weights():
+    """Feet high-AC classes: scoring weights are AC-only."""
+    for cls in ("WAR", "MNK", "RNG", "BST", "BRD"):
+        w = resolve_weights(cls, "Feet")
+        assert set(w) == {"ac"}, cls
+        assert w["ac"] >= 50.0, cls
+
+
 def test_score_missing_stats_zero():
     aug = _aug(
         focus_heroic=60,
@@ -89,6 +97,32 @@ def test_feet_prefers_high_ac_for_war():
     )
     assert head_order[0].item_id == 1
     assert feet_order[0].item_id == 2
+
+
+def test_feet_small_ac_edge_beats_focus_for_war():
+    """A few AC points must outweigh much higher focus/ATK on Feet for WAR."""
+    more_focus = _aug(
+        item_id=1,
+        name="Focus Gem",
+        focus_heroic=70,
+        ac=113,
+        hp=1200,
+        atk=80,
+        stats={"hdex": 70, "ac": 113, "hp": 1200, "atk": 80},
+    )
+    more_ac = _aug(
+        item_id=2,
+        name="AC Gem",
+        focus_heroic=20,
+        ac=116,
+        hp=900,
+        atk=20,
+        stats={"hdex": 20, "ac": 116, "hp": 900, "atk": 20},
+    )
+    order = sorted(
+        [more_focus, more_ac], key=lambda a: rank_key(a, "WAR", "Feet")
+    )
+    assert order[0].item_id == 2
 
 
 def test_shield_overlay_requires_flag():
