@@ -15,9 +15,10 @@ def main() -> None:
         f"EQ Augs — Slot2 Type 7/8 Checker v{__version__}",
         url=setup_url(),
         js_api=api,
-        width=860,
-        height=640,
-        min_size=(640, 480),
+        # Tall enough for Aug options + Advanced weights without clipping.
+        width=920,
+        height=780,
+        min_size=(800, 700),
         background_color="#0b0e11",
     )
     api.bind_window(window)

@@ -4,17 +4,34 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
-from typing import Mapping
+from typing import Iterator, Mapping
 
-from eq_augs.aug_stats import STAT_DISPLAY, STAT_KEYS
+from eq_augs.aug_stats import (
+    ADVANCED_WEIGHT_ALWAYS,
+    ADVANCED_WEIGHT_EXCLUDE,
+    STAT_DISPLAY,
+    STAT_KEYS,
+)
 from eq_augs.package_data import data_dir
-from eq_augs.profiles import CLASS_TO_PROFILE, FEET_HIGH_AC_CLASSES, ProfileId
+from eq_augs.profiles import (
+    CLASS_TO_PROFILE,
+    FEET_HIGH_AC_CLASSES,
+    PROFILE_LABELS,
+    ProfileId,
+)
 from eq_augs.raidloot import AugCandidate
 from eq_augs.slots import EAR_REPORT_SLOTS
 
 OVERRIDE_FILENAME = "weight_overrides.json"
+
+# Per-generate session overrides (GUI advanced weights for a single character).
+_session_absolute_weights: ContextVar[dict[str, float] | None] = ContextVar(
+    "session_absolute_weights", default=None
+)
 
 
 def _appdata_root() -> Path:
@@ -91,6 +108,39 @@ def clear_weights_cache() -> None:
     _tables.cache_clear()
 
 
+def sanitize_weight_map(raw: Mapping[str, object] | None) -> dict[str, float]:
+    if not raw:
+        return {}
+    out: dict[str, float] = {}
+    for key, value in raw.items():
+        if key not in STAT_KEYS:
+            continue
+        try:
+            num = float(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        if abs(num) > 1e-9:
+            out[key] = num
+    return out
+
+
+@contextmanager
+def session_absolute_weights(
+    weights: Mapping[str, float] | None,
+) -> Iterator[None]:
+    """
+    Temporarily replace role/class base weights for the current generate.
+
+    Slot overlays (Feet AC-only, shield Secondary) still apply on top.
+    """
+    cleaned = sanitize_weight_map(weights) if weights else None
+    token = _session_absolute_weights.set(cleaned or None)
+    try:
+        yield
+    finally:
+        _session_absolute_weights.reset(token)
+
+
 def class_role(class_abbr: str | None) -> str | None:
     if not class_abbr:
         return None
@@ -117,6 +167,9 @@ def resolve_weights(
 ) -> dict[str, float]:
     """
     Effective weights = role base ⊕ class modifiers ⊕ slot overlays ⊕ AppData overrides.
+
+    When :func:`session_absolute_weights` is active, that map replaces the
+    role/class/AppData base; slot overlays still apply.
     """
     roles_doc, classes_doc, overlays_doc, override = _tables()
     roles = roles_doc.get("roles") or {}
@@ -132,16 +185,37 @@ def resolve_weights(
         use_profile = profile or (CLASS_TO_PROFILE.get(key) if key else None) or "dex"
         role_name = _default_role_for_profile(use_profile)  # type: ignore[arg-type]
 
-    role_base = dict(roles.get(role_name) or {})
-    ov_roles = override.get("roles") if isinstance(override.get("roles"), dict) else {}
-    if role_name in ov_roles and isinstance(ov_roles[role_name], dict):
-        # Role key overrides replace individual weights (not additive).
-        role_base = {**role_base, **{k: float(v) for k, v in ov_roles[role_name].items()}}
+    session = _session_absolute_weights.get()
+    if session is not None:
+        base = dict(session)
+        class_mods: dict[str, float] = {}
+        flat: dict[str, float] = {}
+    else:
+        role_base = dict(roles.get(role_name) or {})
+        ov_roles = override.get("roles") if isinstance(override.get("roles"), dict) else {}
+        if role_name in ov_roles and isinstance(ov_roles[role_name], dict):
+            # Role key overrides replace individual weights (not additive).
+            role_base = {
+                **role_base,
+                **{k: float(v) for k, v in ov_roles[role_name].items()},
+            }
 
-    class_mods = {
-        **(packaged.get("modifiers") or {}),
-        **(ov_entry.get("modifiers") or {}),
-    }
+        class_mods = {
+            **(packaged.get("modifiers") or {}),
+            **(ov_entry.get("modifiers") or {}),
+        }
+        base = role_base
+
+        # Extra additive overrides: {"stat_overrides": {...}} or {"weights": {"WAR": {...}}}
+        flat = {}
+        if isinstance(override.get("stat_overrides"), dict):
+            for k, v in override["stat_overrides"].items():
+                flat[k] = float(v)
+        if key and isinstance(override.get("weights"), dict):
+            per = override["weights"].get(key)
+            if isinstance(per, dict):
+                for k, v in per.items():
+                    flat[k] = float(flat.get(k, 0.0)) + float(v)
 
     slot_base = _gear_slot_base(gear_slot)
     overlay_mods: dict[str, float] = {}
@@ -164,21 +238,51 @@ def resolve_weights(
         for k, v in (overlay.get("modifiers") or {}).items():
             overlay_mods[k] = float(overlay_mods.get(k, 0.0)) + float(v)
 
-    # Extra additive overrides: {"stat_overrides": {...}} or {"weights": {"WAR": {...}}}
-    flat: dict[str, float] = {}
-    if isinstance(override.get("stat_overrides"), dict):
-        for k, v in override["stat_overrides"].items():
-            flat[k] = float(v)
-    if key and isinstance(override.get("weights"), dict):
-        per = override["weights"].get(key)
-        if isinstance(per, dict):
-            for k, v in per.items():
-                flat[k] = float(flat.get(k, 0.0)) + float(v)
-
-    merged = _merge_weight_maps(role_base, class_mods, overlay_mods, flat)
+    merged = _merge_weight_maps(base, class_mods, overlay_mods, flat)
     if feet_ac_priority:
         return _apply_feet_ac_dominance(merged)
     return merged
+
+
+def default_class_weights(
+    class_abbr: str | None,
+    *,
+    profile: ProfileId | None = None,
+) -> dict:
+    """
+    Class default weights for the Advanced GUI (Head slot — no Feet/shield overlay).
+
+    Returns ``classAbbr``, ``profile``, ``profileLabel``, ``role``, and ``weights``.
+    """
+    key = (class_abbr or "").strip().upper() or None
+    resolved_profile: ProfileId
+    if profile:
+        resolved_profile = profile
+    elif key and key in CLASS_TO_PROFILE:
+        resolved_profile = CLASS_TO_PROFILE[key]
+    else:
+        resolved_profile = "dex"
+
+    role = class_role(key) or _default_role_for_profile(resolved_profile)
+    weights = resolve_weights(key, "Head", profile=resolved_profile)
+    # Stable UI order: STAT_KEYS, always include Attack/Heal/SD/Clairvoyance,
+    # never Accuracy / Combat Effects / Shielding / Stun Resist.
+    ordered: dict[str, float] = {}
+    for k in STAT_KEYS:
+        if k in ADVANCED_WEIGHT_EXCLUDE:
+            continue
+        if k in weights or k in ADVANCED_WEIGHT_ALWAYS:
+            ordered[k] = float(weights.get(k, 0.0))
+    for k in ADVANCED_WEIGHT_ALWAYS:
+        ordered.setdefault(k, 0.0)
+    return {
+        "classAbbr": key,
+        "profile": resolved_profile,
+        "profileLabel": PROFILE_LABELS.get(resolved_profile, resolved_profile),
+        "role": role,
+        "weights": ordered,
+        "labels": {k: STAT_DISPLAY.get(k, k) for k in ordered},
+    }
 
 
 def _apply_feet_ac_dominance(weights: dict[str, float]) -> dict[str, float]:

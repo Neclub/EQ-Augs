@@ -23,11 +23,10 @@ Tank (tank)
   ATK                   3.00
   Avoidance             2.50
   HStr                  2.00
-  Shielding             2.00
   HAgi                  1.50
-  Accuracy              1.00
-  Combat Effects        1.00
-  Stun Resist           1.00
+  Heal Amount           1.50
+  Spell Damage          1.50
+  Clairvoyance          1.00
 
 Priest (priest)
   Heal Amount          10.00
@@ -37,6 +36,7 @@ Priest (priest)
   Spell Damage          4.00
   Clairvoyance          3.50
   AC                    2.00
+  ATK                   1.50
   HSta                  1.50
   End                   1.00
 
@@ -46,21 +46,23 @@ Pure Caster (pure_caster)
   Clairvoyance          5.50
   HP                    4.00
   Mana                  2.50
+  Heal Amount           1.50
   HSta                  1.50
   AC                    1.00
+  ATK                   1.00
   End                   0.50
-  Heal Amount           0.50
   Spell Shield          0.50
 
 Melee DPS (melee_dps)
   HDex                 10.00
   ATK                   8.00
-  Accuracy              6.00
-  Combat Effects        5.50
   HP                    5.00
   HAgi                  3.00
+  Spell Damage          3.00
+  Heal Amount           2.50
   HStr                  2.50
   AC                    2.00
+  Clairvoyance          2.00
   HSta                  2.00
   Strike Through        2.00
   End                   1.50
@@ -71,14 +73,13 @@ Hybrid DPS (hybrid_dps)
   HP                    6.50
   Mana                  5.00
   AC                    4.50
-  Accuracy              4.00
-  Combat Effects        3.50
+  Spell Damage          3.50
   HAgi                  2.50
+  Heal Amount           2.50
+  Clairvoyance          2.00
   HSta                  2.00
   HStr                  2.00
-  Spell Damage          2.00
   End                   1.50
-  Heal Amount           1.50
 
 2. CLASS MODIFIERS (added to role base)
 ------------------------------------------------------------------------
@@ -134,7 +135,7 @@ MNK  catalog=dex
   Avoidance             1.00
   HAgi                  1.00
 ROG  catalog=dex
-  Accuracy              1.00
+  ATK                   1.00
   Strike Through        1.00
 
 --- Hybrid DPS ---
@@ -147,8 +148,8 @@ BST  catalog=dex
   Heal Amount           0.50
   Mana                  0.50
 RNG  catalog=dex
-  Accuracy              1.00
   ATK                   1.00
+  Spell Damage          1.00
   AC                    0.50
 
 3. SLOT OVERLAYS (added when slot/class match)
@@ -186,11 +187,10 @@ WAR  role=tank
   ATK                   3.00
   Avoidance             2.50
   HStr                  2.00
-  Shielding             2.00
   HAgi                  1.50
-  Accuracy              1.00
-  Combat Effects        1.00
-  Stun Resist           1.00
+  Heal Amount           1.50
+  Spell Damage          1.50
+  Clairvoyance          1.00
 
 SHD  role=tank
   AC                   10.00
@@ -200,14 +200,12 @@ SHD  role=tank
   End                   5.00
   ATK                   3.00
   Avoidance             2.50
+  Spell Damage          2.50
   HStr                  2.00
   Mana                  2.00
-  Shielding             2.00
   HAgi                  1.50
-  Accuracy              1.00
-  Combat Effects        1.00
-  Spell Damage          1.00
-  Stun Resist           1.00
+  Heal Amount           1.50
+  Clairvoyance          1.00
 
 PAL  role=tank
   AC                   10.00
@@ -215,17 +213,15 @@ PAL  role=tank
   HDex                  8.00
   HSta                  7.00
   End                   5.00
+  Heal Amount           3.50
   ATK                   3.00
   Avoidance             2.50
-  Heal Amount           2.00
   HStr                  2.00
   Mana                  2.00
-  Shielding             2.00
   HAgi                  1.50
-  Accuracy              1.00
-  Combat Effects        1.00
+  Spell Damage          1.50
+  Clairvoyance          1.00
   HWis                  1.00
-  Stun Resist           1.00
 
 CLR  role=priest
   Heal Amount          11.00
@@ -235,6 +231,7 @@ CLR  role=priest
   Clairvoyance          4.00
   Spell Damage          4.00
   AC                    2.00
+  ATK                   1.50
   HSta                  1.50
   End                   1.00
 
@@ -246,6 +243,7 @@ DRU  role=priest
   Spell Damage          5.50
   Clairvoyance          3.50
   AC                    2.00
+  ATK                   1.50
   HSta                  1.50
   End                   1.00
 
@@ -257,9 +255,9 @@ SHM  role=priest
   Spell Damage          5.00
   Clairvoyance          3.50
   AC                    2.00
+  ATK                   2.00
   HSta                  1.50
   End                   1.00
-  ATK                   0.50
 
 WIZ  role=pure_caster
   Spell Damage         11.00
@@ -267,10 +265,11 @@ WIZ  role=pure_caster
   Clairvoyance          5.00
   HP                    4.00
   Mana                  2.50
+  Heal Amount           1.50
   HSta                  1.50
   AC                    1.00
+  ATK                   1.00
   End                   0.50
-  Heal Amount           0.50
   Spell Shield          0.50
 
 MAG  role=pure_caster
@@ -280,9 +279,10 @@ MAG  role=pure_caster
   HP                    5.00
   Mana                  2.50
   AC                    1.50
+  Heal Amount           1.50
   HSta                  1.50
+  ATK                   1.00
   End                   0.50
-  Heal Amount           0.50
   Spell Shield          0.50
 
 NEC  role=pure_caster
@@ -291,11 +291,12 @@ NEC  role=pure_caster
   Clairvoyance          5.50
   HP                    5.50
   Mana                  2.50
+  Heal Amount           1.50
   HSta                  1.50
   AC                    1.00
+  ATK                   1.00
   DoT Shield            1.00
   End                   0.50
-  Heal Amount           0.50
   Spell Shield          0.50
 
 ENC  role=pure_caster
@@ -304,34 +305,37 @@ ENC  role=pure_caster
   Clairvoyance          7.50
   HP                    4.00
   Mana                  3.50
+  Heal Amount           1.50
   HSta                  1.50
   AC                    1.00
+  ATK                   1.00
   End                   0.50
-  Heal Amount           0.50
   Spell Shield          0.50
 
 ROG  role=melee_dps
   HDex                 10.00
-  ATK                   8.00
-  Accuracy              7.00
-  Combat Effects        5.50
+  ATK                   9.00
   HP                    5.00
   HAgi                  3.00
+  Spell Damage          3.00
   Strike Through        3.00
+  Heal Amount           2.50
   HStr                  2.50
   AC                    2.00
+  Clairvoyance          2.00
   HSta                  2.00
   End                   1.50
 
 MNK  role=melee_dps
   HDex                 10.00
   ATK                   8.00
-  Accuracy              6.00
-  Combat Effects        5.50
   HP                    5.00
   HAgi                  4.00
   AC                    3.50
+  Spell Damage          3.00
+  Heal Amount           2.50
   HStr                  2.50
+  Clairvoyance          2.00
   HSta                  2.00
   Strike Through        2.00
   End                   1.50
@@ -340,12 +344,13 @@ MNK  role=melee_dps
 BER  role=melee_dps
   HDex                 10.00
   ATK                   9.00
-  Accuracy              6.00
-  Combat Effects        5.50
   HP                    5.00
   HStr                  4.00
   HAgi                  3.00
+  Spell Damage          3.00
+  Heal Amount           2.50
   AC                    2.00
+  Clairvoyance          2.00
   End                   2.00
   HSta                  2.00
   Strike Through        2.00
@@ -355,15 +360,14 @@ RNG  role=hybrid_dps
   ATK                   8.00
   HP                    6.50
   AC                    5.00
-  Accuracy              5.00
   Mana                  5.00
-  Combat Effects        3.50
+  Spell Damage          4.50
   HAgi                  2.50
+  Heal Amount           2.50
+  Clairvoyance          2.00
   HSta                  2.00
   HStr                  2.00
-  Spell Damage          2.00
   End                   1.50
-  Heal Amount           1.50
 
 BST  role=hybrid_dps
   HDex                  8.50
@@ -371,13 +375,12 @@ BST  role=hybrid_dps
   ATK                   7.00
   Mana                  5.50
   AC                    4.50
-  Accuracy              4.00
-  Combat Effects        3.50
+  Spell Damage          3.50
+  Heal Amount           3.00
   HAgi                  2.50
-  Heal Amount           2.00
+  Clairvoyance          2.00
   HSta                  2.00
   HStr                  2.00
-  Spell Damage          2.00
   End                   1.50
 
 BRD  role=hybrid_dps
@@ -386,14 +389,13 @@ BRD  role=hybrid_dps
   HP                    6.50
   Mana                  6.00
   AC                    5.00
-  Accuracy              4.00
-  Combat Effects        3.50
+  Spell Damage          3.50
   HAgi                  2.50
+  Heal Amount           2.50
+  Clairvoyance          2.00
   HSta                  2.00
   HStr                  2.00
-  Spell Damage          2.00
   End                   1.50
-  Heal Amount           1.50
   HCha                  1.00
 
 5. FEET OVERLAY EFFECTIVE (WAR / MNK / RNG / BST / BRD)
@@ -416,14 +418,15 @@ BRD Feet
 
 ROG Feet
   HDex                 10.00
-  ATK                   8.00
-  Accuracy              7.00
-  Combat Effects        5.50
+  ATK                   9.00
   HP                    5.00
   HAgi                  3.00
+  Spell Damage          3.00
   Strike Through        3.00
+  Heal Amount           2.50
   HStr                  2.50
   AC                    2.00
+  Clairvoyance          2.00
   HSta                  2.00
   End                   1.50
 
@@ -438,12 +441,9 @@ PAL Secondary (shield)
   Avoidance             2.50
   HDex                  2.00
   HStr                  2.00
-  Shielding             2.00
   HAgi                  1.50
-  Accuracy              1.00
-  Combat Effects        1.00
-  Stun Resist           1.00
-  Heal Amount          -1.00
-  Spell Damage         -3.00
+  Clairvoyance          1.00
+  Heal Amount           0.50
+  Spell Damage         -1.50
   HWis                 -5.00
   HInt                 -6.00

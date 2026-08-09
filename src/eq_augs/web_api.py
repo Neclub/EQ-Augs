@@ -25,6 +25,7 @@ from eq_augs.roster import (
     unique_servers,
 )
 from eq_augs.web_bridge import eq_logo_data_uri
+from eq_augs.weights import default_class_weights, sanitize_weight_map
 
 
 def _downloads_dir() -> Path:
@@ -91,6 +92,13 @@ class WebApi:
     def set_include_anniversary(self, include: bool) -> dict:
         self._include_anniversary = bool(include)
         return {"includeAnniversary": self._include_anniversary}
+
+    def get_class_weight_defaults(
+        self, class_abbr: str | None = None, profile: str | None = None
+    ) -> dict:
+        """Return Head-slot default weights for Advanced aug options (single char)."""
+        use_profile = normalize_profile(profile) if profile else None
+        return default_class_weights(class_abbr, profile=use_profile)
 
     def set_output_format(self, format: str) -> dict:
         if format in ("excel", "html", "both"):
@@ -205,6 +213,14 @@ class WebApi:
         out_dir = Path(self._output_dir)
         self._file_paths = paths
 
+        session_weights = None
+        if opts.get("advancedWeights") and len(paths) == 1:
+            raw = opts.get("sessionWeights")
+            if isinstance(raw, dict):
+                cleaned = sanitize_weight_map(raw)
+                if cleaned:
+                    session_weights = cleaned
+
         def worker() -> None:
             try:
                 bundle = build_export_bundle(
@@ -213,6 +229,7 @@ class WebApi:
                     artisans_prize_owned=prize,
                     include_anniversary=include_anniversary,
                     persona_order=persona_order or None,
+                    session_weights=session_weights,
                 )
                 if not bundle.characters:
                     self._notify_complete(

@@ -60,6 +60,7 @@ def test_serialize_default_focus_filter_prefers_hdex():
     )
     payload = serialize_report(bundle)
     assert payload["defaultFocusFilter"] == "HDex"
+    assert payload["reportTitle"] == "Team Type 7/8 Augs"
     assert {p["label"] for p in payload["rankedProfiles"]} == {"HDex", "HInt"}
     assert payload["rankedAugs"][0]["focusLabel"] == "HDex"
     assert payload["rankedAugs"][1]["focusLabel"] == "HInt"
@@ -98,6 +99,16 @@ def test_serialize_farm_list_and_eqresource_links():
         filepath="Farmer_xegony-Inventory.txt",
         comparisons=[cmp_],
         owned_item_ids={1},
+        slots_changed=1,
+        stat_summary={
+            "focus": 12,
+            "ac": 20,
+            "hp": 333,
+            "atk": 5,
+            "heal_amount": 0,
+            "spell_damage": 0,
+            "clairvoyance": 0,
+        },
     )
     farm = FarmListEntry(
         character="Farmer",
@@ -116,8 +127,10 @@ def test_serialize_farm_list_and_eqresource_links():
         characters=[ch],
         farm_list=[farm],
         ranked_augs=[_aug(item_id=175169, name="Joy of the Dancer")],
+        export_prefix="Farmer",
     )
     payload = serialize_report(bundle)
+    assert payload["reportTitle"] == "Farmer Type 7/8 Augs"
     assert payload["eqResourceItemUrl"] == EQRESOURCE_ITEM_URL
     assert "eqresource.com" in payload["eqResourceItemUrl"]
     assert payload["farmList"] == [
@@ -133,6 +146,22 @@ def test_serialize_farm_list_and_eqresource_links():
     upgrade = payload["upgrades"][0]
     assert upgrade["recommendedOwned"] is False
     assert upgrade["recommendedExpansion"] == "Shattering of Ro"
+    assert payload["statSummary"] == [
+        {
+            "personaKey": "Farmer_xegony_ROG",
+            "character": "Farmer",
+            "columnLabel": "Farmer",
+            "focusLabel": "HDex",
+            "slotsChanged": 1,
+            "focus": 12,
+            "ac": 20,
+            "hp": 333,
+            "atk": 5,
+            "healAmount": 0,
+            "spellDamage": 0,
+            "clairvoyance": 0,
+        }
+    ]
 
 
 def test_build_farm_list_skips_owned_recommendations():

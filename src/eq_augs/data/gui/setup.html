@@ -13,6 +13,7 @@
   margin-top: 12px;
   font-size: 13px;
 }
+.check-row:first-child { margin-top: 0; }
 .check-row input {
   width: 16px;
   height: 16px;
@@ -23,6 +24,134 @@
   font-size: 11px;
   margin-top: 6px;
   line-height: 1.35;
+}
+.options-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--header);
+}
+.options-tab {
+  flex: 1 1 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.options-tab:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--panel-hover);
+}
+.options-tab.on {
+  color: var(--accent-slots);
+  border-bottom-color: var(--accent-slots);
+}
+.options-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.panel-options {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.panel-options .panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.advanced-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+}
+.advanced-meta-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.advanced-meta {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.advanced-meta strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.advanced-actions {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.advanced-actions .btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+.advanced-reset-status {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #86efac;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.advanced-reset-status.on {
+  opacity: 1;
+}
+.weight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  flex: 1 1 auto;
+  min-height: 160px;
+  max-height: none;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+.weight-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text);
+}
+.weight-row input {
+  width: 56px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 11px;
+  text-align: right;
+}
+.weight-row input:disabled {
+  opacity: 0.45;
 }
 </style>
 </head>
@@ -61,9 +190,12 @@
     </section>
 
     <div class="settings-column">
-      <section class="panel">
-        <div class="panel-header options">Aug options</div>
-        <div class="panel-body">
+      <section class="panel panel-options">
+        <div class="options-tabs" role="tablist" aria-label="Aug settings">
+          <button type="button" class="options-tab on" id="tabAugOptions" role="tab" aria-selected="true">Aug options</button>
+          <button type="button" class="options-tab" id="tabAdvancedWeights" role="tab" aria-selected="false" disabled>Advanced weights</button>
+        </div>
+        <div class="panel-body" id="paneAugOptions" role="tabpanel">
           <label class="check-row">
             <input type="checkbox" id="artisansPrize">
             <span>I own Artisan's Prize (Ear BiS)</span>
@@ -74,6 +206,24 @@
             <span>Include Anniversary augs</span>
           </label>
           <div class="hint">Gems of Distant Echoes are only sold during the anniversary event. Leave unchecked to exclude them from recommendations.</div>
+        </div>
+        <div class="panel-body hidden" id="paneAdvancedWeights" role="tabpanel">
+          <div class="advanced-pane">
+            <div class="hint" id="advancedWeightsHint">Single character only — edit class default scoring weights for this generate.</div>
+            <label class="check-row">
+              <input type="checkbox" id="useWeightOverrides">
+              <span>Use weight overrides</span>
+            </label>
+            <div class="hint">When checked, the weights below replace class defaults for this generate and are noted in the report. Leave unchecked to use class defaults with no override mention in the output.</div>
+            <div class="advanced-meta-row">
+              <div class="advanced-meta" id="advancedWeightsMeta">Profile: —</div>
+              <div class="advanced-actions">
+                <span class="advanced-reset-status" id="advancedResetStatus" aria-live="polite"></span>
+                <button type="button" class="btn btn-secondary" id="btnResetWeights">Reset defaults</button>
+              </div>
+            </div>
+            <div class="weight-grid" id="weightGrid"></div>
+          </div>
         </div>
       </section>
 

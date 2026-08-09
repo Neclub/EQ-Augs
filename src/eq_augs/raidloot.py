@@ -348,6 +348,8 @@ def _parse_stats_from_detail(detail: str) -> dict[str, int]:
         ("Heal Amount", "heal_amount"),
         ("Spell Damage", "spell_damage"),
         ("Clairvoyance", "clairvoyance"),
+        ("Attack", "atk"),
+        ("ATK", "atk"),
     ):
         if key in stats:
             continue

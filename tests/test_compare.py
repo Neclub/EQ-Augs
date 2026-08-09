@@ -5,10 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from eq_augs.compare import (
+    Slot2Comparison,
     assign_slot_recommendations,
     build_ideal_loadout,
     compare_character,
     recommend_for_slot,
+    slot_stat_deltas,
+    summarize_stat_deltas,
     upgrade_stat_delta_note,
 )
 from eq_augs.parser import InventoryData, InventoryItem, Slot2Aug, parse_inventory_file
@@ -485,6 +488,111 @@ def test_shield_secondary_recommends_highest_ac():
     assert recommend_for_slot(
         "Secondary", cat, artisans_prize_owned=False, secondary_is_shield=False
     ) is None
+
+
+def test_slot_stat_deltas_and_summary_rollup():
+    weaker = AugCandidate(
+        item_id=1,
+        name="Weak",
+        profile="dex",
+        focus_heroic=49,
+        ac=95,
+        hp=1417,
+        atk=10,
+        stats={
+            "hdex": 49,
+            "ac": 95,
+            "hp": 1417,
+            "atk": 10,
+            "heal_amount": 5,
+            "spell_damage": 0,
+            "clairvoyance": 0,
+        },
+    )
+    stronger = AugCandidate(
+        item_id=2,
+        name="Strong",
+        profile="dex",
+        focus_heroic=61,
+        ac=115,
+        hp=1750,
+        atk=25,
+        stats={
+            "hdex": 61,
+            "ac": 115,
+            "hp": 1750,
+            "atk": 25,
+            "heal_amount": 8,
+            "spell_damage": 12,
+            "clairvoyance": 4,
+        },
+    )
+    empty_gain = AugCandidate(
+        item_id=3,
+        name="Fill",
+        profile="dex",
+        focus_heroic=40,
+        ac=100,
+        hp=900,
+        atk=5,
+        stats={"hdex": 40, "ac": 100, "hp": 900, "atk": 5},
+    )
+
+    d_upgrade = slot_stat_deltas(weaker, stronger, "dex")
+    assert d_upgrade["focus"] == 12
+    assert d_upgrade["ac"] == 20
+    assert d_upgrade["hp"] == 333
+    assert d_upgrade["atk"] == 15
+    assert d_upgrade["heal_amount"] == 3
+    assert d_upgrade["spell_damage"] == 12
+    assert d_upgrade["clairvoyance"] == 4
+
+    d_empty = slot_stat_deltas(None, empty_gain, "dex")
+    assert d_empty["focus"] == 40
+    assert d_empty["ac"] == 100
+    assert d_empty["hp"] == 900
+
+    comps = [
+        Slot2Comparison(
+            gear_slot="Head",
+            current_name="Weak",
+            current_id=1,
+            recommended_name="Strong",
+            recommended_id=2,
+            recommended_focus=61,
+            status="upgrade",
+            stat_deltas=d_upgrade,
+        ),
+        Slot2Comparison(
+            gear_slot="Arms",
+            current_name=None,
+            current_id=None,
+            recommended_name="Fill",
+            recommended_id=3,
+            recommended_focus=40,
+            status="empty",
+            stat_deltas=d_empty,
+        ),
+        Slot2Comparison(
+            gear_slot="Legs",
+            current_name="BiS",
+            current_id=9,
+            recommended_name="BiS",
+            recommended_id=9,
+            recommended_focus=70,
+            status="bis",
+            stat_deltas=None,
+        ),
+    ]
+    totals, changed = summarize_stat_deltas(comps)
+    assert changed == 2
+    assert totals["focus"] == 52
+    assert totals["ac"] == 120
+    assert totals["hp"] == 1233
+    assert totals["atk"] == 20
+    assert totals["heal_amount"] == 3
+    assert totals["spell_damage"] == 12
+    assert totals["clairvoyance"] == 4
 
 
 def test_upgrade_stat_delta_note_hint_label():

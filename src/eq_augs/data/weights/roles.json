@@ -9,12 +9,11 @@
       "endurance": 5.0,
       "atk": 3.0,
       "avoidance": 2.5,
-      "shielding": 2.0,
       "hstr": 2.0,
+      "heal_amount": 1.5,
+      "spell_damage": 1.5,
       "hagi": 1.5,
-      "accuracy": 1.0,
-      "combat_effects": 1.0,
-      "stun_resist": 1.0
+      "clairvoyance": 1.0
     },
     "priest": {
       "heal_amount": 10.0,
@@ -24,6 +23,7 @@
       "spell_damage": 4.0,
       "clairvoyance": 3.5,
       "ac": 2.0,
+      "atk": 1.5,
       "hsta": 1.5,
       "endurance": 1.0
     },
@@ -33,20 +33,22 @@
       "clairvoyance": 5.5,
       "hp": 4.0,
       "mana": 2.5,
+      "heal_amount": 1.5,
       "hsta": 1.5,
+      "atk": 1.0,
       "ac": 1.0,
-      "heal_amount": 0.5,
       "endurance": 0.5,
       "spell_shield": 0.5
     },
     "melee_dps": {
       "hdex": 10.0,
       "atk": 8.0,
-      "accuracy": 6.0,
-      "combat_effects": 5.5,
       "hp": 5.0,
+      "spell_damage": 3.0,
       "hagi": 3.0,
+      "heal_amount": 2.5,
       "hstr": 2.5,
+      "clairvoyance": 2.0,
       "ac": 2.0,
       "hsta": 2.0,
       "strikethrough": 2.0,
@@ -58,13 +60,12 @@
       "hp": 6.5,
       "mana": 5.0,
       "ac": 4.5,
-      "accuracy": 4.0,
-      "combat_effects": 3.5,
+      "spell_damage": 3.5,
+      "heal_amount": 2.5,
       "hagi": 2.5,
+      "clairvoyance": 2.0,
       "hstr": 2.0,
       "hsta": 2.0,
-      "spell_damage": 2.0,
-      "heal_amount": 1.5,
       "endurance": 1.5
     }
   }

@@ -37,6 +37,7 @@ def serialize_report(bundle: ExportBundle) -> dict:
     """Serialize all graded current augs; Upgrade to blank when already BiS."""
     rows: list[dict] = []
     char_meta: list[dict] = []
+    stat_summary_rows: list[dict] = []
 
     for i, ch in enumerate(bundle.characters):
         pk = (
@@ -57,6 +58,23 @@ def serialize_report(bundle: ExportBundle) -> dict:
                 "profile": ch.profile,
                 "columnLabel": column_label,
                 "personaKey": pk,
+            }
+        )
+        summary = ch.stat_summary or {}
+        stat_summary_rows.append(
+            {
+                "personaKey": pk,
+                "character": ch.character,
+                "columnLabel": column_label,
+                "focusLabel": PROFILE_FOCUS_LABEL.get(ch.profile, "HDex"),
+                "slotsChanged": ch.slots_changed,
+                "focus": int(summary.get("focus", 0)),
+                "ac": int(summary.get("ac", 0)),
+                "hp": int(summary.get("hp", 0)),
+                "atk": int(summary.get("atk", 0)),
+                "healAmount": int(summary.get("heal_amount", 0)),
+                "spellDamage": int(summary.get("spell_damage", 0)),
+                "clairvoyance": int(summary.get("clairvoyance", 0)),
             }
         )
         for cmp_ in ch.comparisons:
@@ -121,7 +139,15 @@ def serialize_report(bundle: ExportBundle) -> dict:
     else:
         default_focus = PROFILE_FOCUS_LABEL.get(bundle.profile, "HDex")
 
+    title_name = (bundle.export_prefix or "").strip()
+    if not title_name and bundle.characters:
+        title_name = bundle.characters[0].character
+    if not title_name:
+        title_name = "EQ"
+    report_title = f"{title_name} Type 7/8 Augs"
+
     return {
+        "reportTitle": report_title,
         "profile": bundle.profile,
         "profileLabel": bundle.profile_label,
         "focusLabel": PROFILE_FOCUS_LABEL.get(bundle.profile, "HDex"),
@@ -143,6 +169,7 @@ def serialize_report(bundle: ExportBundle) -> dict:
         "catalogUrl": bundle.catalog.url,
         "showServerInColumns": bundle.show_server_in_columns,
         "characters": char_meta,
+        "statSummary": stat_summary_rows,
         "upgrades": rows,
         "farmList": farm_rows,
         "rankedAugs": [
@@ -154,7 +181,10 @@ def serialize_report(bundle: ExportBundle) -> dict:
                 "focusHeroic": a.focus_heroic,
                 "ac": a.ac,
                 "hp": a.hp,
-                "atk": a.atk,
+                "atk": a.atk or int((a.stats or a.effective_stats()).get("atk", 0)),
+                "healAmount": int((a.stats or a.effective_stats()).get("heal_amount", 0)),
+                "spellDamage": int((a.stats or a.effective_stats()).get("spell_damage", 0)),
+                "clairvoyance": int((a.stats or a.effective_stats()).get("clairvoyance", 0)),
                 "slotText": a.slot_text,
                 "earOnly": a.ear_only,
                 "shieldOnly": a.shield_only,

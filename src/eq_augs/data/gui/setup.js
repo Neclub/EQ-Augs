@@ -7,6 +7,11 @@ const state = {
   profile: "dex",
   artisansPrizeOwned: false,
   includeAnniversary: false,
+  optionsTab: "options", // "options" | "advanced"
+  useWeightOverrides: false,
+  weightDefaults: null,
+  weightEdits: null,
+  weightsClassKey: null,
   outputFormat: "both",
   outputDir: "",
   generating: false,
@@ -112,8 +117,11 @@ function refreshUI() {
   renderRoster();
   $("artisansPrize").checked = state.artisansPrizeOwned;
   $("includeAnniversary").checked = state.includeAnniversary;
+  const useOv = $("useWeightOverrides");
+  if (useOv) useOv.checked = state.useWeightOverrides;
   $("outputPath").value = state.outputDir || "";
   const n = state.roster.length;
+  const single = n === 1;
   const servers = new Set(state.roster.map((e) => (e.server || "").toLowerCase()).filter(Boolean));
   let status = "Ready • No files loaded";
   if (n) {
@@ -124,6 +132,130 @@ function refreshUI() {
   $("status").classList.toggle("ok", n > 0);
   $("btnGenerate").disabled = state.generating || n === 0;
   syncOutputFormatChips();
+  syncOptionsTabs(single);
+}
+
+function setOptionsTab(tab) {
+  const single = state.roster.length === 1;
+  if (tab === "advanced" && !single) tab = "options";
+  state.optionsTab = tab;
+  syncOptionsTabs(single);
+  if (tab === "advanced") ensureWeightDefaultsLoaded();
+}
+
+function syncOptionsTabs(single) {
+  const tabOptions = $("tabAugOptions");
+  const tabAdvanced = $("tabAdvancedWeights");
+  const paneOptions = $("paneAugOptions");
+  const paneAdvanced = $("paneAdvancedWeights");
+  const hint = $("advancedWeightsHint");
+  if (!tabOptions || !tabAdvanced || !paneOptions || !paneAdvanced) return;
+
+  if (!single && state.optionsTab === "advanced") {
+    state.optionsTab = "options";
+    state.useWeightOverrides = false;
+    state.weightDefaults = null;
+    state.weightEdits = null;
+    state.weightsClassKey = null;
+  }
+
+  tabAdvanced.disabled = !single || state.generating;
+  const useOv = $("useWeightOverrides");
+  if (useOv) {
+    useOv.disabled = !single || state.generating;
+    useOv.checked = state.useWeightOverrides && single;
+  }
+  const resetBtn = $("btnResetWeights");
+  if (resetBtn) {
+    resetBtn.disabled =
+      !single || state.generating || !state.useWeightOverrides;
+  }
+  const onAdvanced = state.optionsTab === "advanced" && single;
+  tabOptions.classList.toggle("on", !onAdvanced);
+  tabAdvanced.classList.toggle("on", onAdvanced);
+  tabOptions.setAttribute("aria-selected", String(!onAdvanced));
+  tabAdvanced.setAttribute("aria-selected", String(onAdvanced));
+  paneOptions.classList.toggle("hidden", onAdvanced);
+  paneAdvanced.classList.toggle("hidden", !onAdvanced);
+
+  if (hint) {
+    hint.textContent = single
+      ? "Edit class default scoring weights for this generate only."
+      : "Available with exactly one character on the roster.";
+  }
+  if (onAdvanced) ensureWeightDefaultsLoaded();
+}
+
+async function ensureWeightDefaultsLoaded() {
+  if (state.optionsTab !== "advanced" || state.roster.length !== 1) return;
+  const entry = state.roster[0];
+  const classKey = entry.classAbbr || "";
+  if (state.weightsClassKey === classKey && state.weightDefaults && state.weightEdits) {
+    renderWeightGrid();
+    return;
+  }
+  try {
+    const info = await api("get_class_weight_defaults", classKey || null, state.profile);
+    state.weightDefaults = info;
+    state.weightEdits = { ...(info.weights || {}) };
+    state.weightsClassKey = classKey;
+    renderWeightGrid();
+  } catch (err) {
+    showToast(String(err.message || err), true);
+  }
+}
+
+function renderWeightGrid() {
+  const grid = $("weightGrid");
+  const meta = $("advancedWeightsMeta");
+  if (!grid || !meta) return;
+  const info = state.weightDefaults;
+  if (!info) {
+    meta.textContent = "Loading defaults…";
+    grid.innerHTML = "";
+    return;
+  }
+  const cls = info.classAbbr || "unknown";
+  const role = info.role || "—";
+  meta.innerHTML = `Profile: <strong>${escapeHtml(info.profileLabel || info.profile)}</strong>
+    · Class: <strong>${escapeHtml(cls)}</strong>
+    · Role: <strong>${escapeHtml(role)}</strong>`;
+
+  const labels = info.labels || {};
+  const edits = state.weightEdits || {};
+  const keys = Object.keys(info.weights || {});
+  grid.innerHTML = "";
+  keys.forEach((key) => {
+    const row = document.createElement("label");
+    row.className = "weight-row";
+    const label = labels[key] || key;
+    const val = edits[key] != null ? edits[key] : 0;
+    row.innerHTML = `<span title="${escapeAttr(key)}">${escapeHtml(label)}</span>
+      <input type="number" step="0.1" data-stat="${escapeAttr(key)}" value="${escapeAttr(val)}">`;
+    const input = row.querySelector("input");
+    input.disabled = !state.useWeightOverrides || state.generating;
+    input.addEventListener("change", () => {
+      const n = Number(input.value);
+      if (!Number.isFinite(n)) return;
+      state.weightEdits = state.weightEdits || {};
+      state.weightEdits[key] = n;
+    });
+    grid.appendChild(row);
+  });
+}
+
+async function resetWeightDefaults() {
+  if (state.optionsTab !== "advanced" || state.roster.length !== 1) return;
+  state.weightsClassKey = null;
+  await ensureWeightDefaultsLoaded();
+  const status = $("advancedResetStatus");
+  if (!status) return;
+  status.textContent = "Weights reset to class defaults";
+  status.classList.add("on");
+  clearTimeout(resetWeightDefaults._timer);
+  resetWeightDefaults._timer = setTimeout(() => {
+    status.classList.remove("on");
+  }, 2200);
 }
 
 async function browseFolder() {
@@ -350,10 +482,17 @@ async function generate() {
   refreshUI();
   $("status").textContent = "Fetching raidloot catalog and building report…";
   try {
+    const useAdvanced =
+      state.roster.length === 1 &&
+      state.useWeightOverrides &&
+      state.weightEdits &&
+      Object.keys(state.weightEdits).length > 0;
     const result = await api("generate_report", {
       profile: state.profile,
       artisansPrizeOwned: state.artisansPrizeOwned,
       includeAnniversary: state.includeAnniversary,
+      advancedWeights: !!useAdvanced,
+      sessionWeights: useAdvanced ? { ...(state.weightEdits || {}) } : null,
       outputFormat: state.outputFormat,
       outputDir: state.outputDir,
       filePaths: state.filePaths,
@@ -450,6 +589,29 @@ function bindEvents() {
     try {
       await api("set_include_anniversary", state.includeAnniversary);
     } catch (_) {}
+  });
+  $("tabAugOptions").addEventListener("click", () => setOptionsTab("options"));
+  $("tabAdvancedWeights").addEventListener("click", () => {
+    if (state.roster.length !== 1) {
+      showToast("Advanced weights need a single character.", true);
+      return;
+    }
+    setOptionsTab("advanced");
+  });
+  $("useWeightOverrides").addEventListener("change", () => {
+    state.useWeightOverrides =
+      $("useWeightOverrides").checked && state.roster.length === 1;
+    const resetBtn = $("btnResetWeights");
+    if (resetBtn) {
+      resetBtn.disabled =
+        state.roster.length !== 1 ||
+        state.generating ||
+        !state.useWeightOverrides;
+    }
+    renderWeightGrid();
+  });
+  $("btnResetWeights").addEventListener("click", () => {
+    resetWeightDefaults();
   });
 
   OUTPUT_FORMATS.forEach((fmt) => {

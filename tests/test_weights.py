@@ -35,7 +35,12 @@ def test_role_class_merge_warrior():
     w = resolve_weights("WAR", "Head")
     assert w["ac"] >= 10.0  # tank 10 + war +1
     assert w["hdex"] >= 8.0
-    assert "heal_amount" not in w or w.get("heal_amount", 0) == 0
+    assert w.get("atk", 0) >= 3.0
+    assert w.get("heal_amount", 0) > 0
+    assert "accuracy" not in w
+    assert "combat_effects" not in w
+    assert "shielding" not in w
+    assert "stun_resist" not in w
 
 
 def test_feet_overlay_war_not_rog():

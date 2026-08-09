@@ -106,7 +106,7 @@ a { color: #8cb4ff; }
 </style>
 </head>
 <body>
-<h1>Type 7/8 Augs</h1>
+<h1 id="reportTitle">Type 7/8 Augs</h1>
 <div class="sub" id="meta"></div>
 <div class="warnings hidden" id="warnings"></div>
 <div class="legend">
@@ -116,6 +116,9 @@ a { color: #8cb4ff; }
   <span><i class="swatch unknown"></i> Unknown</span>
 </div>
 <div class="filters" id="charFilters"></div>
+<h2>Stat summary</h2>
+<p class="sub" id="statSummarySub">Totals if Upgrade/Empty slots use the suggested augs.</p>
+<div id="statSummaryWrap"></div>
 <div id="tableWrap"></div>
 <h2>Need to farm</h2>
 <div class="filters" id="farmFilters"></div>
@@ -164,6 +167,49 @@ function slotLabel(a) {
 function selectedCharacterKey() {
   const sel = document.getElementById("characterFilter");
   return sel ? sel.value : "";
+}
+function signed(n) {
+  const v = Number(n) || 0;
+  return v > 0 ? `+${v}` : String(v);
+}
+function renderStatSummary() {
+  const rows = REPORT.statSummary || [];
+  const wrap = document.getElementById("statSummaryWrap");
+  if (!wrap) return;
+  const key = selectedCharacterKey();
+  const filtered = key
+    ? rows.filter(r => r.personaKey === key || r.columnLabel === key || r.character === key)
+    : rows;
+
+  if (!rows.length) {
+    wrap.innerHTML = '<p class="empty-msg">No suggested upgrades to summarize.</p>';
+    return;
+  }
+  if (!filtered.length) {
+    wrap.innerHTML = '<p class="empty-msg">No summary for this character.</p>';
+    return;
+  }
+
+  let html = "<table><thead><tr>" +
+    "<th>Character</th><th>Slots</th><th>Focus</th><th>AC</th><th>HP</th><th>ATK</th>" +
+    "<th>Heal</th><th>Spell Dmg</th><th>Clairvoyance</th>" +
+    "</tr></thead><tbody>";
+  filtered.forEach(r => {
+    const focusLabel = r.focusLabel || REPORT.focusLabel || "HDex";
+    html += `<tr>` +
+      `<td>${esc(r.columnLabel || r.character)}</td>` +
+      `<td>${r.slotsChanged || 0}</td>` +
+      `<td>${signed(r.focus)} ${esc(focusLabel)}</td>` +
+      `<td>${signed(r.ac)}</td>` +
+      `<td>${signed(r.hp)}</td>` +
+      `<td>${signed(r.atk)}</td>` +
+      `<td>${signed(r.healAmount)}</td>` +
+      `<td>${signed(r.spellDamage)}</td>` +
+      `<td>${signed(r.clairvoyance)}</td>` +
+      `</tr>`;
+  });
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
 }
 function renderUpgrades() {
   const upgrades = REPORT.upgrades || [];
@@ -282,12 +328,19 @@ function renderRanked() {
   }
 
   let r = "<table><thead><tr>" +
-    `<th>#</th><th>Name</th><th>ID</th><th>${esc(focusLabel)}</th><th>AC</th><th>HP</th><th>Type</th><th>Slots</th><th>Source</th>` +
+    `<th>#</th><th>Name</th><th>ID</th><th>${esc(focusLabel)}</th><th>AC</th><th>HP</th>` +
+    "<th>ATK</th><th>Heal</th><th>Spell Dmg</th><th>Clrv</th><th>Type</th><th>Slots</th><th>Source</th>" +
     "</tr></thead><tbody>";
   filtered.forEach((a, i) => {
+    const st = a.stats || {};
+    const atk = a.atk || st.atk || 0;
+    const heal = a.healAmount != null ? a.healAmount : (st.heal_amount || 0);
+    const sd = a.spellDamage != null ? a.spellDamage : (st.spell_damage || 0);
+    const clrv = a.clairvoyance != null ? a.clairvoyance : (st.clairvoyance || 0);
     r += `<tr><td>${i + 1}</td>` +
       `<td>${itemLink(a.name, a.itemId)}</td>` +
       `<td>${a.itemId}</td><td>${a.focusHeroic}</td><td>${a.ac}</td><td>${a.hp}</td>` +
+      `<td>${atk}</td><td>${heal}</td><td>${sd}</td><td>${clrv}</td>` +
       `<td>${esc(a.refType || "General")}</td>` +
       `<td>${esc(slotLabel(a))}</td><td>${esc(a.source)}</td></tr>`;
   });
@@ -295,6 +348,7 @@ function renderRanked() {
   wrap.innerHTML = r;
 }
 function onCharacterFilterChange() {
+  renderStatSummary();
   renderUpgrades();
   renderFarm();
 }
@@ -303,6 +357,11 @@ function render() {
     document.getElementById("meta").textContent = "No report data.";
     return;
   }
+  const title = REPORT.reportTitle || "EQ Type 7/8 Augs";
+  document.title = title;
+  const h1 = document.getElementById("reportTitle");
+  if (h1) h1.textContent = title;
+
   const meta = [
     REPORT.profileLabel,
     REPORT.server ? `Server: ${REPORT.server}` : null,
@@ -394,6 +453,7 @@ function render() {
   document.getElementById("refFocusFilter").addEventListener("change", renderRanked);
   document.getElementById("refTypeFilter").addEventListener("change", renderRanked);
 
+  renderStatSummary();
   renderUpgrades();
   renderFarm();
   renderRanked();

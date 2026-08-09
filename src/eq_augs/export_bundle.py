@@ -109,8 +109,6 @@ def build_export_bundle(
     profile: str | ProfileId = "dex",
     artisans_prize_owned: bool = False,
     include_anniversary: bool = False,
-    catalog_html: str | None = None,
-    shield_catalog_html: str | None = None,
     persona_order: list[str] | None = None,
     socket_overrides: dict[int, tuple[str | None, str | None]] | None = None,
     type78_slot_by_parent_id: dict[int, int | None] | None = None,
@@ -119,6 +117,9 @@ def build_export_bundle(
     chest_class_overrides: dict[int, tuple[str | None, str | None]] | None = None,
     fetch_chest_class: bool = True,
     fetch_expansions: bool = True,
+    catalog_html: str | None = None,
+    shield_catalog_html: str | None = None,
+    session_weights: dict[str, float] | None = None,
 ) -> ExportBundle:
     """Parse inventories, fetch raidloot catalog(s), and compare Slot2 augs.
 
@@ -255,74 +256,86 @@ def build_export_bundle(
 
     characters: list[CharacterSlot2Report] = []
     servers: list[str] = []
-    for data, char_profile in zip(inventories, char_profiles):
-        report = compare_character(
-            data,
-            catalog_for(char_profile),
-            artisans_prize_owned=artisans_prize_owned,
-            profile=char_profile,
-            class_abbr=data.class_abbr,
-            type78_slot_by_parent_id=type78_slot_by_parent_id,
-            eqr_aug_html_by_id=eqr_aug_html_by_id,
-            fetch_eqr_augs=fetch_eqr_augs,
-        )
-        characters.append(report)
-        if data.server:
-            servers.append(data.server)
-
-    # Expansion names for recommended upgrade IDs (EQ Resource expac icon).
-    rec_ids: list[int] = []
-    for ch in characters:
-        for cmp_ in ch.comparisons:
-            if cmp_.status not in NEEDS_UPGRADE_STATUSES:
-                continue
-            if cmp_.recommended_id and cmp_.recommended_id > 0:
-                rec_ids.append(cmp_.recommended_id)
-    expansions = resolve_item_expansions(
-        rec_ids,
-        html_overrides=eqr_aug_html_by_id,
-        allow_network=fetch_expansions,
+    # Advanced GUI weights apply only to a single-character generate.
+    active_session_weights = (
+        session_weights if session_weights and len(inventories) == 1 else None
     )
-    characters = apply_expansions_to_characters(characters, expansions)
+    from eq_augs.weights import session_absolute_weights
 
-    if len(set(char_profiles)) > 1:
-        warnings.append(
-            "Multiple class profiles in roster "
-            f"({', '.join(sorted(set(char_profiles)))}); "
-            "each character uses their own aug catalog. "
-            "Ranked reference includes all roster profiles (HTML defaults to HDex)."
+    with session_absolute_weights(active_session_weights):
+        for data, char_profile in zip(inventories, char_profiles):
+            report = compare_character(
+                data,
+                catalog_for(char_profile),
+                artisans_prize_owned=artisans_prize_owned,
+                profile=char_profile,
+                class_abbr=data.class_abbr,
+                type78_slot_by_parent_id=type78_slot_by_parent_id,
+                eqr_aug_html_by_id=eqr_aug_html_by_id,
+                fetch_eqr_augs=fetch_eqr_augs,
+            )
+            characters.append(report)
+            if data.server:
+                servers.append(data.server)
+
+        if active_session_weights:
+            warnings.append(
+                "Advanced weight overrides applied for this single-character report."
+            )
+
+        # Expansion names for recommended upgrade IDs (EQ Resource expac icon).
+        rec_ids: list[int] = []
+        for ch in characters:
+            for cmp_ in ch.comparisons:
+                if cmp_.status not in NEEDS_UPGRADE_STATUSES:
+                    continue
+                if cmp_.recommended_id and cmp_.recommended_id > 0:
+                    rec_ids.append(cmp_.recommended_id)
+        expansions = resolve_item_expansions(
+            rec_ids,
+            html_overrides=eqr_aug_html_by_id,
+            allow_network=fetch_expansions,
         )
+        characters = apply_expansions_to_characters(characters, expansions)
 
-    # Ranked reference: top augs for every profile present on the roster,
-    # ordered by weighted score for a representative class of that profile.
-    from eq_augs.weights import rank_key
+        if len(set(char_profiles)) > 1:
+            warnings.append(
+                "Multiple class profiles in roster "
+                f"({', '.join(sorted(set(char_profiles)))}); "
+                "each character uses their own aug catalog. "
+                "Ranked reference includes all roster profiles (HTML defaults to HDex)."
+            )
 
-    _PROFILE_REP_CLASS = {"dex": "ROG", "int": "WIZ", "wis": "CLR"}
+        # Ranked reference: top augs for every profile present on the roster,
+        # ordered by weighted score for a representative class of that profile.
+        from eq_augs.weights import rank_key
 
-    profile_order = [p for p in ("dex", "int", "wis") if p in set(char_profiles)]
-    if not profile_order:
-        profile_order = [primary_profile]
+        _PROFILE_REP_CLASS = {"dex": "ROG", "int": "WIZ", "wis": "CLR"}
 
-    # Prefer a roster character's class when scoring their profile's ranked list.
-    rep_class_for_profile: dict[ProfileId, str | None] = {}
-    for data, char_profile in zip(inventories, char_profiles):
-        if char_profile not in rep_class_for_profile and data.class_abbr:
-            rep_class_for_profile[char_profile] = data.class_abbr.strip().upper()
+        profile_order = [p for p in ("dex", "int", "wis") if p in set(char_profiles)]
+        if not profile_order:
+            profile_order = [primary_profile]
 
-    ranked: list[AugCandidate] = []
-    for pid in profile_order:
-        cat = catalog_for(pid)
-        rep_class = rep_class_for_profile.get(pid) or _PROFILE_REP_CLASS.get(pid)
-        scored = [
-            a
-            for a in cat.augs
-            if not a.shield_only
-            and (artisans_prize_owned or a.item_id != 88785)
-        ]
-        scored.sort(
-            key=lambda a: rank_key(a, rep_class, "Head", profile=pid)
-        )
-        ranked.extend(scored[:50])
+        # Prefer a roster character's class when scoring their profile's ranked list.
+        rep_class_for_profile: dict[ProfileId, str | None] = {}
+        for data, char_profile in zip(inventories, char_profiles):
+            if char_profile not in rep_class_for_profile and data.class_abbr:
+                rep_class_for_profile[char_profile] = data.class_abbr.strip().upper()
+
+        ranked: list[AugCandidate] = []
+        for pid in profile_order:
+            cat = catalog_for(pid)
+            rep_class = rep_class_for_profile.get(pid) or _PROFILE_REP_CLASS.get(pid)
+            scored = [
+                a
+                for a in cat.augs
+                if not a.shield_only
+                and (artisans_prize_owned or a.item_id != 88785)
+            ]
+            scored.sort(
+                key=lambda a: rank_key(a, rep_class, "Head", profile=pid)
+            )
+            ranked.extend(scored[:50])
 
     distinct_servers = {s for s in servers if s}
     server = ""

@@ -43,11 +43,60 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
     """Write upgrade-list workbook; returns the saved path."""
     wb = Workbook()
 
-    # --- Sheet 1: All current type 7/8 augs ---
-    ws = wb.active
-    ws.title = "Augs"
-
     show_server = bundle.show_server_in_columns
+
+    # --- Sheet 1: Stat summary (totals if suggested augs equipped) ---
+    ws_sum = wb.active
+    ws_sum.title = "Stat Summary"
+    sum_headers = [
+        "Character",
+        "Slots changed",
+        "Focus",
+        "AC",
+        "HP",
+        "ATK",
+        "Heal Amount",
+        "Spell Damage",
+        "Clairvoyance",
+    ]
+    for col, h in enumerate(sum_headers, start=1):
+        cell = ws_sum.cell(1, col, h)
+        cell.fill = HEADER_FILL
+        cell.font = HEADER_FONT
+
+    sum_row = 2
+    for i, ch in enumerate(bundle.characters):
+        server = ch.server
+        if bundle.roster and i < len(bundle.roster):
+            server = bundle.roster[i].server or server
+        label = f"{ch.character} ({server})" if show_server and server else ch.character
+        focus_label = PROFILE_FOCUS_LABEL.get(ch.profile, "HDex")
+        summary = ch.stat_summary or {}
+        values = [
+            label,
+            ch.slots_changed,
+            f"{int(summary.get('focus', 0)):+d} {focus_label}",
+            int(summary.get("ac", 0)),
+            int(summary.get("hp", 0)),
+            int(summary.get("atk", 0)),
+            int(summary.get("heal_amount", 0)),
+            int(summary.get("spell_damage", 0)),
+            int(summary.get("clairvoyance", 0)),
+        ]
+        for col, val in enumerate(values, start=1):
+            ws_sum.cell(sum_row, col, val)
+        sum_row += 1
+
+    if sum_row == 2:
+        ws_sum.cell(2, 1, "No suggested upgrades to summarize.")
+
+    for i, w in enumerate([22, 14, 14, 8, 8, 8, 12, 12, 12], start=1):
+        ws_sum.column_dimensions[get_column_letter(i)].width = w
+    ws_sum.row_dimensions[1].height = 20
+
+    # --- Sheet 2: All current type 7/8 augs ---
+    ws = wb.create_sheet("Augs")
+
     headers = [
         "Character",
         "Slot",
@@ -148,7 +197,7 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.row_dimensions[1].height = 20
 
-    # --- Sheet 2: Need to Farm ---
+    # --- Sheet 3: Need to Farm ---
     ws_farm = wb.create_sheet("Need to Farm")
     farm_headers = ["Character", "Slot", "Aug", "ID", "Expansion"]
     for col, h in enumerate(farm_headers, start=1):
@@ -176,7 +225,7 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
     for i, w in enumerate([18, 12, 40, 10, 22], start=1):
         ws_farm.column_dimensions[get_column_letter(i)].width = w
 
-    # --- Sheet 3: Ranked reference ---
+    # --- Sheet 4: Ranked reference ---
     ws2 = wb.create_sheet("Ranked Augs")
     meta = [
         f"Profile: {bundle.profile_label}",
@@ -199,6 +248,9 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         "AC",
         "HP",
         "ATK",
+        "Heal",
+        "Spell Dmg",
+        "Clairvoyance",
         "Slots",
         "Source",
     ]
@@ -218,6 +270,7 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
                 else "All"
             )
         )
+        stats = aug.effective_stats()
         values = [
             i,
             aug.name,
@@ -226,7 +279,10 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
             aug.focus_heroic,
             aug.ac,
             aug.hp,
-            aug.atk,
+            aug.atk or int(stats.get("atk", 0)),
+            int(stats.get("heal_amount", 0)),
+            int(stats.get("spell_damage", 0)),
+            int(stats.get("clairvoyance", 0)),
             slot_desc,
             aug.source,
         ]
@@ -236,11 +292,11 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         name_cell.hyperlink = EQRESOURCE_ITEM_URL.format(item_id=aug.item_id)
         name_cell.font = Font(color="0563C1", underline="single")
 
-    widths2 = [4, 40, 10, 8, 8, 6, 8, 6, 40, 40]
+    widths2 = [4, 40, 10, 8, 8, 6, 8, 6, 6, 8, 10, 40, 40]
     for i, w in enumerate(widths2, start=1):
         ws2.column_dimensions[get_column_letter(i)].width = w
 
-    # --- Sheet 4: Legend ---
+    # --- Sheet 5: Legend ---
     ws3 = wb.create_sheet("Legend")
     ws3.cell(1, 1, "Status").font = Font(bold=True)
     ws3.cell(1, 2, "Meaning").font = Font(bold=True)
@@ -265,6 +321,12 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         10,
         2,
         "Recommended aug is already equipped in another slot (e.g. Range → Head)",
+    )
+    ws3.cell(11, 1, "Stat Summary").font = Font(bold=True)
+    ws3.cell(
+        11,
+        2,
+        "Totals if Upgrade/Empty slots use the suggested augs (BiS/unknown excluded)",
     )
     ws3.column_dimensions["A"].width = 14
     ws3.column_dimensions["B"].width = 72

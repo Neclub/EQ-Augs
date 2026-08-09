@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.1`
+**Standalone version:** `0.3.2`
 
 ## Purpose of this app
 
@@ -77,6 +77,9 @@ Add to Inventory Parser setup UI:
 1. **Artisan's Prize owned** checkbox (global per generate run).
 2. **Include Anniversary augs** checkbox (default off).
 3. Optional: enable/disable “Slot2 Augs” sheet/section (chip or include toggle).
+4. **Advanced weights** (single character only): tab next to Aug options with
+   compact editable class default weights; session-only via `session_weights` on
+   generate — do not persist to AppData unless IP already has a weight editor.
 
 Do **not** add a Stat profile dropdown — IP should use Chest/filename class → profile
 the same way EQ Augs does.
@@ -164,7 +167,8 @@ Recommendations rank legal (slot-fitting) augs by:
 - Packaged tables: `eq_augs/data/weights/{roles,classes,slot_overlays}.json`
 - Optional overrides: `%LOCALAPPDATA%\EQ Augs\weight_overrides.json`
 - Fit filters (Charm/Range exclusions, shield-only, Ear/Artisan's Prize, anniversary)
-  stay orthogonal to scoring.
+  stay orthogonal to scoring. Scoring uses **Attack / Heal Amount / Spell Damage /
+  Clairvoyance** instead of Accuracy / Combat Effects / Shielding / Stun Resist.
 - Catalog fetch remains Dex/INT/WIS raidloot filters; weights refine ranking
   within that catalog.
 
@@ -304,7 +308,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.1`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.2`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.

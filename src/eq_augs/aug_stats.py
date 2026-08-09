@@ -40,6 +40,23 @@ STAT_KEYS: tuple[str, ...] = (
     "clairvoyance",
 )
 
+# Advanced GUI / scoring emphasis — Attack, Heal, Spell Damage, Clairvoyance
+# replace Accuracy, Combat Effects, Shielding, and Stun Resist.
+ADVANCED_WEIGHT_EXCLUDE: frozenset[str] = frozenset(
+    {
+        "accuracy",
+        "combat_effects",
+        "shielding",
+        "stun_resist",
+    }
+)
+ADVANCED_WEIGHT_ALWAYS: tuple[str, ...] = (
+    "atk",
+    "heal_amount",
+    "spell_damage",
+    "clairvoyance",
+)
+
 # Short labels for upgrade notes / UI.
 STAT_DISPLAY: dict[str, str] = {
     "ac": "AC",

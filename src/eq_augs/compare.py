@@ -17,6 +17,7 @@ from eq_augs.profiles import (
     ARTISANS_PRIZE_ID,
     ARTISANS_PRIZE_NAME,
     PROFILE_FOCUS_LABEL,
+    PROFILE_FOCUS_STAT,
     ProfileId,
 )
 from eq_augs.raidloot import AugCandidate, CatalogResult, augs_for_slot
@@ -44,6 +45,17 @@ REPORT_ROW_STATUSES: frozenset[str] = frozenset(
 # Statuses that show a non-blank Upgrade-to recommendation.
 NEEDS_UPGRADE_STATUSES: frozenset[str] = frozenset({"upgrade", "empty", "unknown"})
 
+# Keys rolled into the "if all suggested augs equipped" summary.
+SUMMARY_STAT_KEYS: tuple[str, ...] = (
+    "focus",
+    "ac",
+    "hp",
+    "atk",
+    "heal_amount",
+    "spell_damage",
+    "clairvoyance",
+)
+
 
 @dataclass(frozen=True)
 class Slot2Comparison:
@@ -58,6 +70,7 @@ class Slot2Comparison:
     recommended_owned: bool | None = None
     recommended_expansion: str | None = None
     move_from_slot: str | None = None
+    stat_deltas: dict[str, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -80,6 +93,8 @@ class CharacterSlot2Report:
     filepath: str
     comparisons: list[Slot2Comparison]
     owned_item_ids: set[int] = field(default_factory=set)
+    slots_changed: int = 0
+    stat_summary: dict[str, int] = field(default_factory=dict)
 
 
 def _is_ear_slot(gear_slot: str) -> bool:
@@ -129,7 +144,31 @@ def _aug_rank_tuple(
     *,
     secondary_is_shield: bool = False,
     profile: ProfileId | None = None,
+    peer: AugCandidate | None = None,
 ) -> tuple:
+    """
+    Sort key for one aug.
+
+    When ``peer`` is set (upgrade vs current), drop Attack-adjacent combat weights
+    that only one side has populated — raidloot list rows often omit Heal /
+    Spell Damage / Clairvoyance while EQ Resource lookups include them.
+    """
+    from eq_augs.weights import resolve_weights, score_aug
+
+    weights = resolve_weights(
+        class_abbr,
+        gear_slot,
+        secondary_is_shield=secondary_is_shield,
+        profile=profile or aug.profile,
+    )
+    if peer is not None:
+        left = aug.effective_stats()
+        right = peer.effective_stats()
+        for key in ("heal_amount", "spell_damage", "clairvoyance"):
+            if not left.get(key) or not right.get(key):
+                weights.pop(key, None)
+        score = score_aug(aug, weights)
+        return (-score, -aug.hp, -aug.ac, aug.name.casefold())
     return rank_key(
         aug,
         class_abbr,
@@ -154,6 +193,39 @@ def _uses_ac_primary(
 
 def _signed_stat(delta: int) -> str:
     return f"+{delta}" if delta >= 0 else str(delta)
+
+
+def slot_stat_deltas(
+    current_aug: AugCandidate | None,
+    recommended: AugCandidate,
+    profile: ProfileId = "dex",
+) -> dict[str, int]:
+    """Raw (recommended − current) for summary stats. Empty current → zeros."""
+    cur = current_aug.effective_stats() if current_aug is not None else {}
+    rec = recommended.effective_stats()
+    focus_key = PROFILE_FOCUS_STAT.get(profile, "hdex")
+
+    def _int(stats: dict[str, int], key: str) -> int:
+        if key == "focus":
+            return int(stats.get(focus_key, 0))
+        return int(stats.get(key, 0))
+
+    return {key: _int(rec, key) - _int(cur, key) for key in SUMMARY_STAT_KEYS}
+
+
+def summarize_stat_deltas(
+    comparisons: list[Slot2Comparison],
+) -> tuple[dict[str, int], int]:
+    """Sum per-slot stat_deltas; return (totals, slots_changed)."""
+    totals = {key: 0 for key in SUMMARY_STAT_KEYS}
+    changed = 0
+    for cmp_ in comparisons:
+        if not cmp_.stat_deltas:
+            continue
+        changed += 1
+        for key in SUMMARY_STAT_KEYS:
+            totals[key] += int(cmp_.stat_deltas.get(key, 0))
+    return totals, changed
 
 
 def upgrade_stat_delta_note(
@@ -540,9 +612,17 @@ def assign_slot_recommendations(
                 cur_aug = _catalog_aug_for_id(catalog, cur.item_id)
                 if cur_aug is not None:
                     if _aug_rank_tuple(
-                        aug, slot, class_abbr, secondary_is_shield=secondary
+                        aug,
+                        slot,
+                        class_abbr,
+                        secondary_is_shield=secondary,
+                        peer=cur_aug,
                     ) > _aug_rank_tuple(
-                        cur_aug, slot, class_abbr, secondary_is_shield=secondary
+                        cur_aug,
+                        slot,
+                        class_abbr,
+                        secondary_is_shield=secondary,
+                        peer=aug,
                     ):
                         continue
             placed = aug
@@ -641,11 +721,13 @@ def _finalize_comparison(
             current.gear_slot,
             class_abbr,
             secondary_is_shield=secondary,
+            peer=cur_aug,
         ) > _aug_rank_tuple(
             cur_aug,
             current.gear_slot,
             class_abbr,
             secondary_is_shield=secondary,
+            peer=recommended,
         ):
             status = "bis"
             note = "Current is better than remaining missing BiS options"
@@ -738,6 +820,17 @@ def _finalize_comparison(
         # Equipped-elsewhere moves are owned even if the ID check were missed.
         rec_owned = recommended.item_id in owned or move_from_slot is not None
 
+    deltas: dict[str, int] | None = None
+    if status in ("upgrade", "empty") and recommended is not None:
+        delta_current = cur_aug if status == "upgrade" else None
+        if (
+            status == "upgrade"
+            and delta_current is None
+            and (current.name or "").casefold() == ARTISANS_PRIZE_NAME.casefold()
+        ):
+            delta_current = _prize_candidate(catalog)
+        deltas = slot_stat_deltas(delta_current, recommended, profile)
+
     return Slot2Comparison(
         gear_slot=current.gear_slot,
         current_name=current.name,
@@ -751,6 +844,7 @@ def _finalize_comparison(
         move_from_slot=move_from_slot
         if status in ("upgrade", "empty", "unknown")
         else None,
+        stat_deltas=deltas,
     )
 
 
@@ -874,6 +968,8 @@ def compare_character(
     order = {s: i for i, s in enumerate(REPORT_SLOTS)}
     comparisons.sort(key=lambda c: (order.get(c.gear_slot, 1000), c.gear_slot))
 
+    summary, slots_changed = summarize_stat_deltas(comparisons)
+
     return CharacterSlot2Report(
         character=data.character,
         server=data.server,
@@ -882,4 +978,6 @@ def compare_character(
         filepath=data.filepath,
         comparisons=comparisons,
         owned_item_ids=owned_ids,
+        slots_changed=slots_changed,
+        stat_summary=summary,
     )

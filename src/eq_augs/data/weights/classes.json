@@ -90,7 +90,7 @@
       "role": "melee_dps",
       "profile": "dex",
       "modifiers": {
-        "accuracy": 1.0,
+        "atk": 1.0,
         "strikethrough": 1.0
       }
     },
@@ -117,7 +117,7 @@
       "profile": "dex",
       "modifiers": {
         "atk": 1.0,
-        "accuracy": 1.0,
+        "spell_damage": 1.0,
         "ac": 0.5
       }
     },
