@@ -5,11 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from eq_augs.craft_components import craft_component_for_aug, owns_craft_component
 from eq_augs.eqresource_augs import resolve_eqresource_augs
 from eq_augs.parser import (
     InventoryData,
     Slot2Aug,
     collect_owned_item_ids,
+    collect_owned_item_names,
     extract_slot2_augs,
     parent_name_is_shield,
 )
@@ -71,6 +73,10 @@ class Slot2Comparison:
     recommended_expansion: str | None = None
     move_from_slot: str | None = None
     stat_deltas: dict[str, int] | None = None
+    # When Need to farm: known empower component (Focus / ore), if any.
+    craft_component_name: str | None = None
+    craft_component_id: int | None = None
+    craft_component_owned: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -82,6 +88,9 @@ class FarmListEntry:
     name: str
     item_id: int
     expansion: str | None = None
+    craft_component_name: str | None = None
+    craft_component_id: int | None = None
+    craft_component_owned: bool | None = None
 
 
 @dataclass
@@ -692,6 +701,7 @@ def _finalize_comparison(
     moved_to_slot: str | None = None,
     external_augs: dict[int, AugCandidate] | None = None,
     owned_item_ids: set[int] | None = None,
+    owned_item_names: set[str] | None = None,
 ) -> Slot2Comparison:
     status, note = classify_status(current, recommended)
     secondary = _is_secondary_shield(current.gear_slot, current.parent_name)
@@ -820,6 +830,24 @@ def _finalize_comparison(
         # Equipped-elsewhere moves are owned even if the ID check were missed.
         rec_owned = recommended.item_id in owned or move_from_slot is not None
 
+    craft_name: str | None = None
+    craft_id: int | None = None
+    craft_owned: bool | None = None
+    if (
+        recommended is not None
+        and rec_owned is False
+        and status in ("upgrade", "empty", "unknown")
+    ):
+        component = craft_component_for_aug(recommended.name)
+        if component is not None:
+            craft_name = component.name
+            craft_id = component.item_id
+            craft_owned = owns_craft_component(
+                component,
+                owned_item_ids=owned_item_ids,
+                owned_item_names=owned_item_names,
+            )
+
     deltas: dict[str, int] | None = None
     if status in ("upgrade", "empty") and recommended is not None:
         delta_current = cur_aug if status == "upgrade" else None
@@ -845,6 +873,9 @@ def _finalize_comparison(
         if status in ("upgrade", "empty", "unknown")
         else None,
         stat_deltas=deltas,
+        craft_component_name=craft_name,
+        craft_component_id=craft_id,
+        craft_component_owned=craft_owned,
     )
 
 
@@ -905,6 +936,7 @@ def compare_character(
     catalog = catalog_result.augs
     catalog_ids = {a.item_id for a in catalog}
     owned_ids = collect_owned_item_ids(data)
+    owned_names = collect_owned_item_names(data)
     if artisans_prize_owned:
         owned_ids = set(owned_ids)
         owned_ids.add(ARTISANS_PRIZE_ID)
@@ -960,6 +992,7 @@ def compare_character(
             moved_to_slot=moved_to.get(slot),
             external_augs=external_augs,
             owned_item_ids=owned_ids,
+            owned_item_names=owned_names,
         )
         for slot in gear_slots
         if slot in by_slot

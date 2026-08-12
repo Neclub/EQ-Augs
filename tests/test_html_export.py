@@ -130,7 +130,7 @@ def test_serialize_farm_list_and_eqresource_links():
         export_prefix="Farmer",
     )
     payload = serialize_report(bundle)
-    assert payload["reportTitle"] == "Farmer Type 7/8 Augs"
+    assert payload["reportTitle"] == "Farmer - ROG Type 7/8 Augs"
     assert payload["eqResourceItemUrl"] == EQRESOURCE_ITEM_URL
     assert "eqresource.com" in payload["eqResourceItemUrl"]
     assert payload["farmList"] == [
@@ -141,6 +141,9 @@ def test_serialize_farm_list_and_eqresource_links():
             "name": "Joy of the Dancer",
             "itemId": 175169,
             "expansion": "Shattering of Ro",
+            "craftComponentName": None,
+            "craftComponentId": None,
+            "craftComponentOwned": None,
         }
     ]
     upgrade = payload["upgrades"][0]
@@ -162,6 +165,101 @@ def test_serialize_farm_list_and_eqresource_links():
             "clairvoyance": 0,
         }
     ]
+    assert payload["characters"][0]["profile"] == "dex"
+    assert payload["characters"][0]["profileLabel"] == "Dex (melee)"
+
+
+def test_serialize_per_character_profile_labels():
+    from eq_augs.compare import CharacterSlot2Report
+    from eq_augs.export_bundle import ExportBundle
+    from eq_augs.html_export import serialize_report
+    from eq_augs.raidloot import CatalogResult
+
+    catalog = CatalogResult(
+        profile="dex",
+        augs=[],
+        fetched_at="t",
+        from_cache=False,
+        url="http://test",
+    )
+    chars = [
+        CharacterSlot2Report(
+            character="Tank",
+            server="bristle",
+            class_abbr="WAR",
+            profile="dex",
+            filepath="Tank_bristle-WAR-Inventory.txt",
+            comparisons=[],
+        ),
+        CharacterSlot2Report(
+            character="Priest",
+            server="bristle",
+            class_abbr="CLR",
+            profile="wis",
+            filepath="Priest_bristle-CLR-Inventory.txt",
+            comparisons=[],
+        ),
+        CharacterSlot2Report(
+            character="Caster",
+            server="xegony",
+            class_abbr="WIZ",
+            profile="int",
+            filepath="Caster_xegony-WIZ-Inventory.txt",
+            comparisons=[],
+        ),
+    ]
+    payload = serialize_report(
+        ExportBundle(
+            profile="dex",
+            profile_label="Dex (melee)",
+            artisans_prize_owned=False,
+            catalog=catalog,
+            characters=chars,
+            ranked_augs=[],
+        )
+    )
+    by_name = {c["character"]: c for c in payload["characters"]}
+    assert by_name["Tank"]["profileLabel"] == "Dex (melee)"
+    assert by_name["Priest"]["profileLabel"] == "WIS (priests)"
+    assert by_name["Caster"]["profileLabel"] == "INT (casters)"
+    assert by_name["Caster"]["server"] == "xegony"
+    assert payload["reportTitle"] == "Team Type 7/8 Augs"
+
+
+def test_serialize_single_character_title_includes_class():
+    from eq_augs.compare import CharacterSlot2Report
+    from eq_augs.export_bundle import ExportBundle
+    from eq_augs.html_export import serialize_report
+    from eq_augs.raidloot import CatalogResult
+
+    catalog = CatalogResult(
+        profile="dex",
+        augs=[],
+        fetched_at="t",
+        from_cache=False,
+        url="http://test",
+    )
+    payload = serialize_report(
+        ExportBundle(
+            profile="dex",
+            profile_label="Dex (melee)",
+            artisans_prize_owned=False,
+            catalog=catalog,
+            characters=[
+                CharacterSlot2Report(
+                    character="Deflub",
+                    server="bristle",
+                    class_abbr="WAR",
+                    profile="dex",
+                    filepath="Deflub_bristle-WAR-Inventory.txt",
+                    comparisons=[],
+                )
+            ],
+            ranked_augs=[],
+            export_prefix="Deflub",
+        )
+    )
+    assert payload["reportTitle"] == "Deflub - WAR Type 7/8 Augs"
 
 
 def test_build_farm_list_skips_owned_recommendations():
@@ -212,3 +310,36 @@ def test_build_farm_list_skips_owned_recommendations():
     assert len(farm) == 1
     assert farm[0].item_id == 20
     assert farm[0].expansion == "Night of Shadows"
+    assert farm[0].craft_component_name is None
+    assert farm[0].craft_component_owned is None
+
+
+def test_build_farm_list_carries_craft_component_owned():
+    from eq_augs.compare import CharacterSlot2Report, Slot2Comparison
+    from eq_augs.export_bundle import build_farm_list
+
+    farm_cmp = Slot2Comparison(
+        gear_slot="Waist",
+        current_name="Old",
+        current_id=2,
+        recommended_name="Acrobat's Gem of Unraveling Order",
+        recommended_id=175572,
+        recommended_focus=61,
+        status="upgrade",
+        recommended_owned=False,
+        craft_component_name="Unraveling Focus of Fortitude",
+        craft_component_id=170818,
+        craft_component_owned=True,
+    )
+    ch = CharacterSlot2Report(
+        character="X",
+        server="s",
+        class_abbr=None,
+        profile="dex",
+        filepath="x",
+        comparisons=[farm_cmp],
+    )
+    farm = build_farm_list([ch], [])
+    assert len(farm) == 1
+    assert farm[0].craft_component_owned is True
+    assert farm[0].craft_component_name == "Unraveling Focus of Fortitude"

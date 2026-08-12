@@ -149,7 +149,14 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
             if show_upgrade and cmp_.move_from_slot:
                 owned_cell.value = f"Move from {cmp_.move_from_slot}"
             elif show_upgrade and cmp_.recommended_owned is not None:
-                owned_cell.value = "Owned" if cmp_.recommended_owned else "Need to farm"
+                if cmp_.recommended_owned:
+                    owned_cell.value = "Owned"
+                elif cmp_.craft_component_owned and cmp_.craft_component_name:
+                    owned_cell.value = (
+                        f"Need to farm (have {cmp_.craft_component_name})"
+                    )
+                else:
+                    owned_cell.value = "Need to farm"
             else:
                 owned_cell.value = ""
 
@@ -214,7 +221,10 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         )
         ws_farm.cell(farm_row, 1, label)
         ws_farm.cell(farm_row, 2, entry.gear_slot)
-        _set_item_cell(ws_farm.cell(farm_row, 3), entry.name, entry.item_id, on_fill=False)
+        aug_label = entry.name
+        if entry.craft_component_owned and entry.craft_component_name:
+            aug_label = f"{entry.name}  [Have {entry.craft_component_name}]"
+        _set_item_cell(ws_farm.cell(farm_row, 3), aug_label, entry.item_id, on_fill=False)
         ws_farm.cell(farm_row, 4, entry.item_id)
         ws_farm.cell(farm_row, 5, entry.expansion or "")
         farm_row += 1
@@ -222,7 +232,7 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
     if farm_row == 2:
         ws_farm.cell(2, 1, "No recommended upgrades to farm.")
 
-    for i, w in enumerate([18, 12, 40, 10, 22], start=1):
+    for i, w in enumerate([18, 12, 52, 10, 22], start=1):
         ws_farm.column_dimensions[get_column_letter(i)].width = w
 
     # --- Sheet 4: Ranked reference ---
@@ -316,6 +326,12 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
     ws3.cell(8, 2, "Recommended upgrade present in inventory, or move from another slot")
     ws3.cell(9, 1, "Need to farm").font = Font(bold=True)
     ws3.cell(9, 2, "Recommended upgrade missing from inventory (see Need to Farm sheet)")
+    ws3.cell(10, 1, "Have Focus/Ore").font = Font(bold=True)
+    ws3.cell(
+        10,
+        2,
+        "Need to farm, but the matching Focus of Fortitude (or Ensanguined ore) is in bags/bank",
+    )
     ws3.cell(10, 1, "Move from").font = Font(bold=True)
     ws3.cell(
         10,

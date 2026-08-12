@@ -256,6 +256,19 @@ def collect_owned_item_ids(data: InventoryData) -> set[int]:
     return owned
 
 
+def collect_owned_item_names(data: InventoryData) -> set[str]:
+    """Casefolded names of non-empty items anywhere in the dump."""
+    owned: set[str] = set()
+    for item in data.items:
+        name = item.name.strip()
+        if not name or name.casefold() == "empty":
+            continue
+        if item.item_id <= 0:
+            continue
+        owned.add(name.casefold())
+    return owned
+
+
 def collect_equipped_parent_ids(data: InventoryData) -> list[int]:
     """
     Equipped parent item IDs that need type 7/8 socket lookup.

@@ -737,3 +737,66 @@ def test_compare_shield_secondary_inventory():
     assert "Shield Only" in sec.note
     assert sec.note.startswith("+")
     assert "AC" in sec.note.split(";")[0]
+
+
+def test_need_to_farm_notes_owned_craft_component():
+    """Need-to-farm Unraveling Order gems note bagged Focus of Fortitude."""
+    acrobat = next(a for a in _catalog().augs if a.item_id == 175572)
+    catalog = CatalogResult(
+        profile="dex",
+        augs=[acrobat],
+        fetched_at="test",
+        from_cache=False,
+        url="http://test",
+    )
+    data = InventoryData(
+        character="Focuslub",
+        server="test",
+        filepath="Focuslub_test-Inventory.txt",
+        items=[
+            InventoryItem("Head", "Test Helm", 1, 1, 6),
+            InventoryItem("Head-Slot2", "Empty", 0, 0, 0),
+            InventoryItem(
+                "General 1-Slot1",
+                "Unraveling Focus of Fortitude",
+                170818,
+                1,
+                0,
+            ),
+        ],
+    )
+    report = compare_character(
+        data,
+        catalog,
+        artisans_prize_owned=False,
+        profile="dex",
+        fetch_eqr_augs=False,
+    )
+    head = next(c for c in report.comparisons if c.gear_slot == "Head")
+    assert head.recommended_id == 175572
+    assert head.recommended_owned is False
+    assert head.craft_component_name == "Unraveling Focus of Fortitude"
+    assert head.craft_component_id == 170818
+    assert head.craft_component_owned is True
+
+    data_missing = InventoryData(
+        character="Nofocus",
+        server="test",
+        filepath="Nofocus_test-Inventory.txt",
+        items=[
+            InventoryItem("Head", "Test Helm", 1, 1, 6),
+            InventoryItem("Head-Slot2", "Empty", 0, 0, 0),
+        ],
+    )
+    report_missing = compare_character(
+        data_missing,
+        catalog,
+        artisans_prize_owned=False,
+        profile="dex",
+        fetch_eqr_augs=False,
+    )
+    head_missing = next(
+        c for c in report_missing.comparisons if c.gear_slot == "Head"
+    )
+    assert head_missing.craft_component_name == "Unraveling Focus of Fortitude"
+    assert head_missing.craft_component_owned is False

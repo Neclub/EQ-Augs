@@ -73,6 +73,9 @@ def build_farm_list(
                     name=cmp_.recommended_name,
                     item_id=cmp_.recommended_id,
                     expansion=cmp_.recommended_expansion,
+                    craft_component_name=cmp_.craft_component_name,
+                    craft_component_id=cmp_.craft_component_id,
+                    craft_component_owned=cmp_.craft_component_owned,
                 )
             )
     return entries
@@ -297,14 +300,6 @@ def build_export_bundle(
             allow_network=fetch_expansions,
         )
         characters = apply_expansions_to_characters(characters, expansions)
-
-        if len(set(char_profiles)) > 1:
-            warnings.append(
-                "Multiple class profiles in roster "
-                f"({', '.join(sorted(set(char_profiles)))}); "
-                "each character uses their own aug catalog. "
-                "Ranked reference includes all roster profiles (HTML defaults to HDex)."
-            )
 
         # Ranked reference: top augs for every profile present on the roster,
         # ordered by weighted score for a representative class of that profile.

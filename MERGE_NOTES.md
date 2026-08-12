@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.3`
+**Standalone version:** `0.3.4`
 
 ## Purpose of this app
 
@@ -134,10 +134,19 @@ vendor gems (time-limited). Module: `eq_augs.anniversary`.
 ## Ownership / Need to farm
 
 - `collect_owned_item_ids` — every non-empty item ID in the dump (bags, bank, equipped).
+- `collect_owned_item_names` — casefolded names for craft-component matching.
 - Recommended upgrades show **Owned**, **Move from {slot}**, or **Need to farm**.
 - **Need to farm** list / Excel sheet = recommended upgrades whose ID is not owned
   (and not a cross-slot move of an already-equipped piece — including pieces freed
   when a priority slot takes a better BiS).
+- Craft empower components (`eq_augs.craft_components`): when a Need-to-farm aug
+  matches a known affix line, note **Have {Focus/ore}** if that component is in the
+  dump (containers are not tracked). Mapping:
+  - Unraveling Order → Unraveling Focus of Fortitude
+  - Phantasmal Luclinite → Otherworldly Focus of Fortitude
+  - Perpetual Reverie → Gallant Focus of Fortitude
+  - Uprising → Fortitude Focus of Uprising
+  - Luclinite Ensanguined → Ossified Bloodied Ore
 - Item hyperlinks → `https://items.eqresource.com/items.php?id={id}`.
 - Expansion from EQ Resource `expacimages/{code}.jpg` for recommended IDs only.
 
@@ -271,7 +280,7 @@ Recommendation filter: `AugCandidate.fits_gear_slot(gear_slot)`.
 Sheets:
 
 1. **Augs** — graded slots; Owned? / Expansion columns; EQ Resource hyperlinks.
-2. **Need to Farm** — missing recommended upgrades.
+2. **Need to Farm** — missing recommended upgrades; aug cell notes Have Focus/ore when owned.
 3. **Ranked Augs** — top N from roster profiles.
 4. **Legend** — status + ownership meanings.
 
@@ -281,7 +290,9 @@ Status colors: bis green, upgrade amber, empty red, unknown blue-gray, no_fit gr
 
 - Add `slot2` object to injected JSON (see `eq_augs.html_export.serialize_report`).
 - Render upgrades + **Need to farm** + ranked list (patterns in `eq_augs/data/report.html`).
-- Item links → EQ Resource; ownership / move badges; expansion column.
+- Item links → EQ Resource; ownership / move / craft-component badges; expansion column.
+- Collapsible cards: Stat summary, Slot recommendations, Need to farm, Ranked reference;
+  Need to farm and Ranked reference start collapsed.
 
 ## Dependencies
 
@@ -302,6 +313,7 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 - `tests/test_eqresource_augs.py` — EQ Resource stats + expansion parse + ownership
 - `tests/test_anniversary.py` — Distant Echoes gem filter
 - `tests/test_html_export.py` — serialize farm list + EQ Resource URL payload
+- `tests/test_craft_components.py` — affix → Focus/ore mapping + ownership helpers
 
 Use fixture `tests/fixtures/raidloot_dex_sample.html` (no live network in CI).
 Socket fixtures: `raidloot_item_*.html`, `eqresource_item_168096.html`.
@@ -317,7 +329,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.3`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.4`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.

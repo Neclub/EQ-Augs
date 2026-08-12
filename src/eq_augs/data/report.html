@@ -8,76 +8,126 @@
 :root {
   --bg: #0b0e11;
   --panel: #141820;
+  --panel-hover: #1a2030;
+  --header: #1e2430;
   --text: #eef0f4;
   --muted: #8b93a7;
   --border: #2a3140;
-  --bis: #166534;
-  --upgrade: #854d0e;
-  --empty: #7f1d1d;
-  --unknown: #1e3a5f;
+  --accent: #3b6fd4;
+  --accent-soft: rgba(59, 111, 212, 0.15);
+  --link: #8cb4ff;
+  --bis: #22c55e;
+  --bis-soft: rgba(34, 197, 94, 0.14);
+  --upgrade: #eab308;
+  --upgrade-soft: rgba(234, 179, 8, 0.14);
+  --empty: #ef4444;
+  --empty-soft: rgba(239, 68, 68, 0.14);
+  --unknown: #60a5fa;
+  --unknown-soft: rgba(96, 165, 250, 0.14);
   --owned: #166534;
   --farm: #9a3412;
+  --warn-bg: #3f1d1d;
+  --warn-border: #7f1d1d;
+  --radius: 10px;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  --sticky-offset: 0px;
 }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   margin: 0;
   font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(59, 111, 212, 0.12), transparent 55%),
+    radial-gradient(900px 400px at 100% 0%, rgba(34, 197, 94, 0.06), transparent 50%),
+    var(--bg);
   color: var(--text);
-  padding: 24px;
+  min-height: 100vh;
 }
-h1 { margin: 0 0 4px; font-size: 22px; }
-h2 { margin: 28px 0 10px; font-size: 18px; }
-.sub { color: var(--muted); margin-bottom: 16px; }
-.warnings {
-  background: #3f1d1d;
-  border: 1px solid #7f1d1d;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+a {
+  color: var(--link);
+  text-decoration: none;
 }
-.hidden { display: none; }
-.filters {
+a:hover { text-decoration: underline; }
+.hidden { display: none !important; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 14, 17, 0.88);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px 14px;
+}
+.topbar-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.topbar-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 12px 18px;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: space-between;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
 }
 .filters label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 .filters select {
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: 7px;
+  padding: 7px 11px;
   font: inherit;
+  min-width: 10rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.filter-count { color: var(--muted); font-size: 12px; }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 28px;
+.filters select:hover { border-color: #3a4254; }
+.filters select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.filter-count {
+  color: var(--muted);
   font-size: 12px;
-}
-th, td {
+  background: var(--panel);
   border: 1px solid var(--border);
-  padding: 8px 10px;
-  vertical-align: top;
-  text-align: left;
+  border-radius: 999px;
+  padding: 3px 10px;
 }
-th { background: #1e2430; position: sticky; top: 0; }
-.bis { background: var(--bis); }
-.upgrade { background: var(--upgrade); }
-.empty { background: var(--empty); }
-.unknown { background: var(--unknown); }
-.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 .legend span {
   display: inline-flex;
   align-items: center;
@@ -86,49 +136,288 @@ th { background: #1e2430; position: sticky; top: 0; }
   color: var(--muted);
 }
 .swatch {
-  width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
 }
-a { color: #8cb4ff; }
-.empty-msg { color: var(--muted); margin: 12px 0 28px; }
+.swatch.bis { background: var(--bis); }
+.swatch.upgrade { background: var(--upgrade); }
+.swatch.empty { background: var(--empty); }
+.swatch.unknown { background: var(--unknown); }
+
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.warnings {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(30, 36, 48, 0.65), transparent);
+}
+.card-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.card-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-align: left;
+}
+.card-toggle:hover { color: #fff; }
+.card-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-radius: 6px;
+}
+.card-toggle .chevron {
+  width: 0.55em;
+  height: 0.55em;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.card.collapsed .card-toggle .chevron {
+  transform: rotate(-45deg);
+}
+.card.collapsed .card-head {
+  border-bottom: none;
+}
+.card.collapsed .card-body,
+.card.collapsed .card-sub,
+.card.collapsed .card-head .filters {
+  display: none;
+}
+.card-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  width: 100%;
+}
+.card-body {
+  padding: 0;
+}
+.card-body.fade {
+  animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0.55; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+.table-scroll {
+  overflow: auto;
+  max-height: min(70vh, 820px);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+th, td {
+  padding: 9px 12px;
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  background: var(--header);
+  color: #c5ccda;
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom-color: #343b4c;
+}
+tbody tr {
+  transition: background 0.12s ease;
+}
+tbody tr:hover {
+  background: var(--panel-hover);
+}
+tbody tr.status-bis {
+  box-shadow: inset 3px 0 0 var(--bis);
+  background: linear-gradient(90deg, var(--bis-soft), transparent 28%);
+}
+tbody tr.status-upgrade {
+  box-shadow: inset 3px 0 0 var(--upgrade);
+  background: linear-gradient(90deg, var(--upgrade-soft), transparent 28%);
+}
+tbody tr.status-empty {
+  box-shadow: inset 3px 0 0 var(--empty);
+  background: linear-gradient(90deg, var(--empty-soft), transparent 28%);
+}
+tbody tr.status-unknown {
+  box-shadow: inset 3px 0 0 var(--unknown);
+  background: linear-gradient(90deg, var(--unknown-soft), transparent 28%);
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.status-pill.bis { background: var(--bis-soft); color: #86efac; }
+.status-pill.upgrade { background: var(--upgrade-soft); color: #fde68a; }
+.status-pill.empty { background: var(--empty-soft); color: #fca5a5; }
+.status-pill.unknown { background: var(--unknown-soft); color: #93c5fd; }
 .badge {
   display: inline-block;
   margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0.02em;
   vertical-align: middle;
 }
 .badge-owned { background: var(--owned); color: #ecfdf5; }
 .badge-farm { background: var(--farm); color: #fff7ed; }
-.exp { display: block; color: #cbd5e1; margin-top: 4px; font-size: 11px; }
+.badge-component { background: #1e3a5f; color: #bfdbfe; }
+.empty-msg {
+  color: var(--muted);
+  margin: 0;
+  padding: 22px 16px;
+  font-size: 13px;
+}
+.muted-cell { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .topbar, .page { padding-left: 14px; padding-right: 14px; }
+  .topbar h1 { font-size: 18px; }
+  th, td { padding: 8px 9px; }
+}
 </style>
 </head>
 <body>
-<h1 id="reportTitle">Type 7/8 Augs</h1>
-<div class="sub" id="meta"></div>
-<div class="warnings hidden" id="warnings"></div>
-<div class="legend">
-  <span><i class="swatch bis"></i> BiS</span>
-  <span><i class="swatch upgrade"></i> Upgrade</span>
-  <span><i class="swatch empty"></i> Empty</span>
-  <span><i class="swatch unknown"></i> Unknown</span>
-</div>
-<div class="filters" id="charFilters"></div>
-<h2>Stat summary</h2>
-<p class="sub" id="statSummarySub">Totals if Upgrade/Empty slots use the suggested augs.</p>
-<div id="statSummaryWrap"></div>
-<div id="tableWrap"></div>
-<h2>Need to farm</h2>
-<div class="filters" id="farmFilters"></div>
-<div id="farmWrap"></div>
-<h2>Ranked reference augs</h2>
-<div class="filters" id="refFilters"></div>
-<div id="rankedWrap"></div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1 id="reportTitle">Type 7/8 Augs</h1>
+    <div class="meta" id="meta"></div>
+    <div class="topbar-controls">
+      <div class="filters" id="charFilters"></div>
+      <div class="legend">
+        <span><i class="swatch bis"></i> BiS</span>
+        <span><i class="swatch upgrade"></i> Upgrade</span>
+        <span><i class="swatch empty"></i> Empty</span>
+        <span><i class="swatch unknown"></i> Unknown</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="warnings hidden" id="warnings"></div>
+
+  <section class="card" id="summaryCard">
+    <div class="card-head">
+      <h2>
+        <button type="button" class="card-toggle" aria-expanded="true" aria-controls="statSummaryWrap">
+          <span class="chevron" aria-hidden="true"></span>
+          Stat summary
+        </button>
+      </h2>
+      <p class="card-sub" id="statSummarySub">Totals if Upgrade/Empty slots use the suggested augs.</p>
+    </div>
+    <div class="card-body" id="statSummaryWrap"></div>
+  </section>
+
+  <section class="card" id="upgradesCard">
+    <div class="card-head">
+      <h2>
+        <button type="button" class="card-toggle" aria-expanded="true" aria-controls="tableWrap">
+          <span class="chevron" aria-hidden="true"></span>
+          Slot recommendations
+        </button>
+      </h2>
+      <span class="filter-count" id="upgradesCount"></span>
+    </div>
+    <div class="card-body" id="tableWrap"></div>
+  </section>
+
+  <section class="card collapsed" id="farmCard">
+    <div class="card-head">
+      <h2>
+        <button type="button" class="card-toggle" aria-expanded="false" aria-controls="farmWrap">
+          <span class="chevron" aria-hidden="true"></span>
+          Need to farm
+        </button>
+      </h2>
+      <div class="filters" id="farmFilters"></div>
+    </div>
+    <div class="card-body" id="farmWrap"></div>
+  </section>
+
+  <section class="card collapsed" id="rankedCard">
+    <div class="card-head">
+      <h2>
+        <button type="button" class="card-toggle" aria-expanded="false" aria-controls="rankedWrap">
+          <span class="chevron" aria-hidden="true"></span>
+          Ranked reference augs
+        </button>
+      </h2>
+      <div class="filters" id="refFilters"></div>
+    </div>
+    <div class="card-body" id="rankedWrap"></div>
+  </section>
+</main>
+
 <script>
 const REPORT = /*__REPORT_JSON__*/;
 const EQRESOURCE_URL = REPORT.eqResourceItemUrl || "https://items.eqresource.com/items.php?id={item_id}";
+const STATUS_LABELS = {
+  bis: "BiS",
+  upgrade: "Upgrade",
+  empty: "Empty",
+  unknown: "Unknown",
+};
+
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -144,13 +433,28 @@ function itemLink(name, id) {
   }
   return esc(name);
 }
-function ownershipBadge(owned, moveFrom) {
+function componentBadge(craftOwned, craftName) {
+  if (craftOwned && craftName) {
+    return `<span class="badge badge-component">Have ${esc(craftName)}</span>`;
+  }
+  return "";
+}
+function ownershipBadge(owned, moveFrom, craftOwned, craftName) {
   if (moveFrom) {
     return `<span class="badge badge-owned">Move from ${esc(moveFrom)}</span>`;
   }
   if (owned === true) return `<span class="badge badge-owned">Owned</span>`;
-  if (owned === false) return `<span class="badge badge-farm">Need to farm</span>`;
+  if (owned === false) {
+    return `<span class="badge badge-farm">Need to farm</span>` +
+      componentBadge(craftOwned, craftName);
+  }
   return "";
+}
+function statusPill(status) {
+  const key = String(status || "").toLowerCase();
+  const label = STATUS_LABELS[key] || status || "—";
+  const cls = STATUS_LABELS[key] ? key : "unknown";
+  return `<span class="status-pill ${esc(cls)}">${esc(label)}</span>`;
 }
 function uniqueSorted(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) =>
@@ -168,6 +472,61 @@ function selectedCharacterKey() {
   const sel = document.getElementById("characterFilter");
   return sel ? sel.value : "";
 }
+function selectedCharacter() {
+  const key = selectedCharacterKey();
+  if (!key || !REPORT.characters || !REPORT.characters.length) return null;
+  return REPORT.characters.find(c =>
+    c.personaKey === key || c.columnLabel === key || c.character === key
+  ) || null;
+}
+function characterTitleName(ch) {
+  if (!ch) return null;
+  const name = (ch.character || "").trim();
+  const cls = (ch.classAbbr || "").trim().toUpperCase();
+  if (!name) return null;
+  return cls ? `${name} - ${cls}` : name;
+}
+function characterFilterLabel(ch) {
+  if (!ch) return "";
+  return characterTitleName(ch) || ch.columnLabel || ch.character || "";
+}
+function flash(el) {
+  if (!el) return;
+  el.classList.remove("fade");
+  void el.offsetWidth;
+  el.classList.add("fade");
+}
+function tableHtml(head, bodyRows) {
+  return `<div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+}
+function renderTitle() {
+  if (!REPORT) return;
+  const ch = selectedCharacter();
+  const subject = characterTitleName(ch);
+  const title = subject
+    ? `${subject} Type 7/8 Augs`
+    : (REPORT.reportTitle || "EQ Type 7/8 Augs");
+  document.title = title;
+  const h1 = document.getElementById("reportTitle");
+  if (h1) h1.textContent = title;
+}
+function renderMeta() {
+  if (!REPORT) {
+    document.getElementById("meta").textContent = "No report data.";
+    return;
+  }
+  const ch = selectedCharacter();
+  const profileLabel = (ch && ch.profileLabel) || REPORT.profileLabel;
+  const server = (ch && ch.server) || REPORT.server;
+  const meta = [
+    profileLabel,
+    server ? `Server: ${server}` : null,
+    `Artisan's Prize: ${REPORT.artisansPrizeOwned ? "owned" : "not owned"}`,
+    `Anniversary augs: ${REPORT.includeAnniversary ? "included" : "excluded"}`,
+    REPORT.catalogFromCache ? `Catalog: cache (${REPORT.catalogFetchedAt})` : `Catalog: live (${REPORT.catalogFetchedAt})`,
+  ].filter(Boolean).join(" · ");
+  document.getElementById("meta").textContent = meta;
+}
 function signed(n) {
   const v = Number(n) || 0;
   return v > 0 ? `+${v}` : String(v);
@@ -183,33 +542,35 @@ function renderStatSummary() {
 
   if (!rows.length) {
     wrap.innerHTML = '<p class="empty-msg">No suggested upgrades to summarize.</p>';
+    flash(wrap);
     return;
   }
   if (!filtered.length) {
     wrap.innerHTML = '<p class="empty-msg">No summary for this character.</p>';
+    flash(wrap);
     return;
   }
 
-  let html = "<table><thead><tr>" +
+  const head =
     "<th>Character</th><th>Slots</th><th>Focus</th><th>AC</th><th>HP</th><th>ATK</th>" +
-    "<th>Heal</th><th>Spell Dmg</th><th>Clairvoyance</th>" +
-    "</tr></thead><tbody>";
+    "<th>Heal</th><th>Spell Dmg</th><th>Clairvoyance</th>";
+  let body = "";
   filtered.forEach(r => {
     const focusLabel = r.focusLabel || REPORT.focusLabel || "HDex";
-    html += `<tr>` +
+    body += `<tr>` +
       `<td>${esc(r.columnLabel || r.character)}</td>` +
-      `<td>${r.slotsChanged || 0}</td>` +
-      `<td>${signed(r.focus)} ${esc(focusLabel)}</td>` +
-      `<td>${signed(r.ac)}</td>` +
-      `<td>${signed(r.hp)}</td>` +
-      `<td>${signed(r.atk)}</td>` +
-      `<td>${signed(r.healAmount)}</td>` +
-      `<td>${signed(r.spellDamage)}</td>` +
-      `<td>${signed(r.clairvoyance)}</td>` +
+      `<td class="num">${r.slotsChanged || 0}</td>` +
+      `<td class="num">${signed(r.focus)} ${esc(focusLabel)}</td>` +
+      `<td class="num">${signed(r.ac)}</td>` +
+      `<td class="num">${signed(r.hp)}</td>` +
+      `<td class="num">${signed(r.atk)}</td>` +
+      `<td class="num">${signed(r.healAmount)}</td>` +
+      `<td class="num">${signed(r.spellDamage)}</td>` +
+      `<td class="num">${signed(r.clairvoyance)}</td>` +
       `</tr>`;
   });
-  html += "</tbody></table>";
-  wrap.innerHTML = html;
+  wrap.innerHTML = tableHtml(head, body);
+  flash(wrap);
 }
 function renderUpgrades() {
   const upgrades = REPORT.upgrades || [];
@@ -219,52 +580,77 @@ function renderUpgrades() {
     ? upgrades.filter(u => u.personaKey === key || u.character === key)
     : upgrades;
 
-  const countEl = document.getElementById("charFilterCount");
-  if (countEl) {
-    countEl.textContent = key
-      ? `${rows.length} of ${upgrades.length} rows`
-      : `${upgrades.length} rows`;
+  const countText = key
+    ? `${rows.length} of ${upgrades.length} rows`
+    : `${upgrades.length} rows`;
+  for (const id of ["charFilterCount", "upgradesCount"]) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = countText;
   }
 
   if (!upgrades.length) {
     wrap.innerHTML = '<p class="empty-msg">No graded type 7/8 slots found.</p>';
+    flash(wrap);
     return;
   }
   if (!rows.length) {
     wrap.innerHTML = '<p class="empty-msg">No rows for this character.</p>';
+    flash(wrap);
     return;
   }
 
-  let html = "<table><thead><tr>" +
-    "<th>Character</th><th>Slot</th><th>Current</th><th>Upgrade to</th><th>Expansion</th><th>Note</th>" +
-    "</tr></thead><tbody>";
+  const head =
+    "<th>Status</th><th>Character</th><th>Slot</th><th>Current</th><th>Upgrade to</th><th>Expansion</th><th>Note</th>";
+  let body = "";
   rows.forEach(u => {
     const cur = u.currentName
       ? itemLink(u.currentName, u.currentId)
-      : "(empty)";
+      : '<span class="muted-cell">(empty)</span>';
     const rec = u.recommendedName
-      ? itemLink(u.recommendedName, u.recommendedId) + ownershipBadge(u.recommendedOwned, u.moveFromSlot)
+      ? itemLink(u.recommendedName, u.recommendedId) + ownershipBadge(
+          u.recommendedOwned,
+          u.moveFromSlot,
+          u.craftComponentOwned,
+          u.craftComponentName
+        )
       : "";
     const exp = u.recommendedExpansion ? esc(u.recommendedExpansion) : "";
-    html += `<tr class="${esc(u.status)}">` +
+    const status = String(u.status || "").toLowerCase();
+    body += `<tr class="status-${esc(status)}">` +
+      `<td>${statusPill(status)}</td>` +
       `<td>${esc(u.character)}</td>` +
       `<td>${esc(u.gearSlot)}</td>` +
       `<td>${cur}</td>` +
       `<td>${rec}</td>` +
       `<td>${exp}</td>` +
-      `<td>${esc(u.note || "")}</td>` +
+      `<td class="muted-cell">${esc(u.note || "")}</td>` +
       "</tr>";
   });
-  html += "</tbody></table>";
-  wrap.innerHTML = html;
+  wrap.innerHTML = tableHtml(head, body);
+  flash(wrap);
 }
 function renderFarm() {
   const farm = REPORT.farmList || [];
   const wrap = document.getElementById("farmWrap");
   const key = selectedCharacterKey();
-  const rows = key
+  const sortSel = document.getElementById("farmSort");
+  const sortBy = sortSel ? sortSel.value : "character";
+  let rows = key
     ? farm.filter(f => f.personaKey === key || f.character === key)
-    : farm;
+    : farm.slice();
+
+  const cmpText = (a, b) =>
+    String(a || "").localeCompare(String(b || ""), undefined, { sensitivity: "base" });
+  rows = rows.slice().sort((a, b) => {
+    if (sortBy === "aug") {
+      return cmpText(a.name, b.name)
+        || cmpText(a.character, b.character)
+        || cmpText(a.gearSlot, b.gearSlot);
+    }
+    return cmpText(a.character, b.character)
+      || cmpText(a.name, b.name)
+      || cmpText(a.gearSlot, b.gearSlot);
+  });
 
   const countEl = document.getElementById("farmFilterCount");
   if (countEl) {
@@ -275,27 +661,30 @@ function renderFarm() {
 
   if (!farm.length) {
     wrap.innerHTML = '<p class="empty-msg">No recommended upgrades to farm — inventory already has them, or no upgrades recommended.</p>';
+    flash(wrap);
     return;
   }
   if (!rows.length) {
     wrap.innerHTML = '<p class="empty-msg">No farm targets for this character.</p>';
+    flash(wrap);
     return;
   }
 
-  let html = "<table><thead><tr>" +
-    "<th>Character</th><th>Slot</th><th>Aug</th><th>ID</th><th>Expansion</th>" +
-    "</tr></thead><tbody>";
+  const head = "<th>Character</th><th>Slot</th><th>Aug</th><th>ID</th><th>Expansion</th>";
+  let body = "";
   rows.forEach(f => {
-    html += "<tr>" +
+    const aug = itemLink(f.name, f.itemId) +
+      componentBadge(f.craftComponentOwned, f.craftComponentName);
+    body += "<tr>" +
       `<td>${esc(f.character)}</td>` +
       `<td>${esc(f.gearSlot)}</td>` +
-      `<td>${itemLink(f.name, f.itemId)}</td>` +
-      `<td>${f.itemId}</td>` +
+      `<td>${aug}</td>` +
+      `<td class="num muted-cell">${f.itemId}</td>` +
       `<td>${esc(f.expansion || "")}</td>` +
       "</tr>";
   });
-  html += "</tbody></table>";
-  wrap.innerHTML = html;
+  wrap.innerHTML = tableHtml(head, body);
+  flash(wrap);
 }
 function renderRanked() {
   const augs = REPORT.rankedAugs || [];
@@ -312,42 +701,52 @@ function renderRanked() {
 
   const countEl = document.getElementById("refFilterCount");
   if (countEl) {
-    const bits = [];
-    if (focus || type) bits.push(`${filtered.length} of ${augs.length} augs`);
-    else bits.push(`${augs.length} augs`);
-    countEl.textContent = bits.join(" · ");
+    countEl.textContent = (focus || type)
+      ? `${filtered.length} of ${augs.length} augs`
+      : `${augs.length} augs`;
   }
 
   if (!augs.length) {
     wrap.innerHTML = '<p class="empty-msg">No ranked reference augs.</p>';
+    flash(wrap);
     return;
   }
   if (!filtered.length) {
     wrap.innerHTML = '<p class="empty-msg">No reference augs for this filter.</p>';
+    flash(wrap);
     return;
   }
 
-  let r = "<table><thead><tr>" +
+  const head =
     `<th>#</th><th>Name</th><th>ID</th><th>${esc(focusLabel)}</th><th>AC</th><th>HP</th>` +
-    "<th>ATK</th><th>Heal</th><th>Spell Dmg</th><th>Clrv</th><th>Type</th><th>Slots</th><th>Source</th>" +
-    "</tr></thead><tbody>";
+    "<th>ATK</th><th>Heal</th><th>Spell Dmg</th><th>Clrv</th><th>Type</th><th>Slots</th><th>Source</th>";
+  let body = "";
   filtered.forEach((a, i) => {
     const st = a.stats || {};
     const atk = a.atk || st.atk || 0;
     const heal = a.healAmount != null ? a.healAmount : (st.heal_amount || 0);
     const sd = a.spellDamage != null ? a.spellDamage : (st.spell_damage || 0);
     const clrv = a.clairvoyance != null ? a.clairvoyance : (st.clairvoyance || 0);
-    r += `<tr><td>${i + 1}</td>` +
+    body += `<tr><td class="num muted-cell">${i + 1}</td>` +
       `<td>${itemLink(a.name, a.itemId)}</td>` +
-      `<td>${a.itemId}</td><td>${a.focusHeroic}</td><td>${a.ac}</td><td>${a.hp}</td>` +
-      `<td>${atk}</td><td>${heal}</td><td>${sd}</td><td>${clrv}</td>` +
+      `<td class="num muted-cell">${a.itemId}</td>` +
+      `<td class="num">${a.focusHeroic}</td>` +
+      `<td class="num">${a.ac}</td>` +
+      `<td class="num">${a.hp}</td>` +
+      `<td class="num">${atk}</td>` +
+      `<td class="num">${heal}</td>` +
+      `<td class="num">${sd}</td>` +
+      `<td class="num">${clrv}</td>` +
       `<td>${esc(a.refType || "General")}</td>` +
-      `<td>${esc(slotLabel(a))}</td><td>${esc(a.source)}</td></tr>`;
+      `<td class="muted-cell">${esc(slotLabel(a))}</td>` +
+      `<td class="muted-cell">${esc(a.source)}</td></tr>`;
   });
-  r += "</tbody></table>";
-  wrap.innerHTML = r;
+  wrap.innerHTML = tableHtml(head, body);
+  flash(wrap);
 }
 function onCharacterFilterChange() {
+  renderTitle();
+  renderMeta();
   renderStatSummary();
   renderUpgrades();
   renderFarm();
@@ -357,19 +756,6 @@ function render() {
     document.getElementById("meta").textContent = "No report data.";
     return;
   }
-  const title = REPORT.reportTitle || "EQ Type 7/8 Augs";
-  document.title = title;
-  const h1 = document.getElementById("reportTitle");
-  if (h1) h1.textContent = title;
-
-  const meta = [
-    REPORT.profileLabel,
-    REPORT.server ? `Server: ${REPORT.server}` : null,
-    `Artisan's Prize: ${REPORT.artisansPrizeOwned ? "owned" : "not owned"}`,
-    `Anniversary augs: ${REPORT.includeAnniversary ? "included" : "excluded"}`,
-    REPORT.catalogFromCache ? `Catalog: cache (${REPORT.catalogFetchedAt})` : `Catalog: live (${REPORT.catalogFetchedAt})`,
-  ].filter(Boolean).join(" · ");
-  document.getElementById("meta").textContent = meta;
 
   if (REPORT.warnings && REPORT.warnings.length) {
     const w = document.getElementById("warnings");
@@ -381,7 +767,7 @@ function render() {
   const charOptions = chars.length
     ? chars.map(c => ({
         value: c.personaKey || c.columnLabel || c.character,
-        label: c.columnLabel || c.character,
+        label: characterFilterLabel(c),
       }))
     : uniqueSorted((REPORT.upgrades || []).map(u => u.character)).map(name => ({
         value: name,
@@ -404,7 +790,12 @@ function render() {
   }
 
   document.getElementById("farmFilters").innerHTML =
+    `<label>Sort by <select id="farmSort">` +
+    `<option value="character">Character</option>` +
+    `<option value="aug">Aug</option>` +
+    `</select></label>` +
     `<span class="filter-count" id="farmFilterCount"></span>`;
+  document.getElementById("farmSort").addEventListener("change", renderFarm);
 
   const types = uniqueSorted((REPORT.rankedAugs || []).map(a => a.refType || "General"));
   const typeOrder = ["General", "Charm/Range", "Charm", "Range", "Ear", "Shield"];
@@ -453,6 +844,17 @@ function render() {
   document.getElementById("refFocusFilter").addEventListener("change", renderRanked);
   document.getElementById("refTypeFilter").addEventListener("change", renderRanked);
 
+  document.querySelectorAll(".card-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".card");
+      if (!card) return;
+      const collapsed = card.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+  });
+
+  renderTitle();
+  renderMeta();
   renderStatSummary();
   renderUpgrades();
   renderFarm();

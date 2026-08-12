@@ -56,6 +56,7 @@ def serialize_report(bundle: ExportBundle) -> dict:
                 "server": ch.server,
                 "classAbbr": ch.class_abbr,
                 "profile": ch.profile,
+                "profileLabel": PROFILE_LABELS.get(ch.profile, ch.profile),
                 "columnLabel": column_label,
                 "personaKey": pk,
             }
@@ -102,6 +103,15 @@ def serialize_report(bundle: ExportBundle) -> dict:
                     "moveFromSlot": (
                         cmp_.move_from_slot if show_upgrade else None
                     ),
+                    "craftComponentName": (
+                        cmp_.craft_component_name if show_upgrade else None
+                    ),
+                    "craftComponentId": (
+                        cmp_.craft_component_id if show_upgrade else None
+                    ),
+                    "craftComponentOwned": (
+                        cmp_.craft_component_owned if show_upgrade else None
+                    ),
                     "status": cmp_.status,
                     "note": cmp_.note,
                 }
@@ -122,6 +132,9 @@ def serialize_report(bundle: ExportBundle) -> dict:
                 "name": entry.name,
                 "itemId": entry.item_id,
                 "expansion": entry.expansion,
+                "craftComponentName": entry.craft_component_name,
+                "craftComponentId": entry.craft_component_id,
+                "craftComponentOwned": entry.craft_component_owned,
             }
         )
 
@@ -140,7 +153,13 @@ def serialize_report(bundle: ExportBundle) -> dict:
         default_focus = PROFILE_FOCUS_LABEL.get(bundle.profile, "HDex")
 
     title_name = (bundle.export_prefix or "").strip()
-    if not title_name and bundle.characters:
+    if len(bundle.characters) == 1:
+        ch = bundle.characters[0]
+        title_name = (ch.character or title_name or "EQ").strip()
+        abbr = (ch.class_abbr or "").strip().upper()
+        if abbr:
+            title_name = f"{title_name} - {abbr}"
+    elif not title_name and bundle.characters:
         title_name = bundle.characters[0].character
     if not title_name:
         title_name = "EQ"
