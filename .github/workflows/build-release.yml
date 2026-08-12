@@ -44,13 +44,14 @@ jobs:
           make_latest: true
 
       - name: Notify Discord
+        continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         shell: bash
         run: |
           if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "DISCORD_WEBHOOK_URL secret is not set" >&2
-            exit 1
+            echo "Skipping Discord notify (DISCORD_WEBHOOK_URL secret is not set)"
+            exit 0
           fi
           version="${{ steps.version.outputs.version }}"
           repo="${{ github.repository }}"
