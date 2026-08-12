@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.4`
+**Standalone version:** `0.3.5`
 
 ## Purpose of this app
 
@@ -293,6 +293,8 @@ Status colors: bis green, upgrade amber, empty red, unknown blue-gray, no_fit gr
 - Item links → EQ Resource; ownership / move / craft-component badges; expansion column.
 - Collapsible cards: Stat summary, Slot recommendations, Need to farm, Ranked reference;
   Need to farm and Ranked reference start collapsed.
+- Report meta line: short catalog time (`YYYY-MM-DD HH:MM UTC`) plus `EQ Augs {version}`
+  from `__version__` (Excel Ranked Augs header uses the same).
 
 ## Dependencies
 
@@ -329,7 +331,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.4`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.5`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.

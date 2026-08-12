@@ -36,7 +36,19 @@ def test_ranked_aug_type_buckets():
     )
 
 
+def test_format_catalog_fetched_at_shortens_iso():
+    from eq_augs.html_export import format_catalog_fetched_at
+
+    assert (
+        format_catalog_fetched_at("2026-08-12T18:59:52.520177+00:00")
+        == "2026-08-12 18:59 UTC"
+    )
+    assert format_catalog_fetched_at("t") == "t"
+    assert format_catalog_fetched_at("") == ""
+
+
 def test_serialize_default_focus_filter_prefers_hdex():
+    from eq_augs import __version__
     from eq_augs.export_bundle import ExportBundle
     from eq_augs.html_export import serialize_report
     from eq_augs.raidloot import CatalogResult
@@ -46,7 +58,7 @@ def test_serialize_default_focus_filter_prefers_hdex():
     catalog = CatalogResult(
         profile="dex",
         augs=[dex],
-        fetched_at="t",
+        fetched_at="2026-08-12T18:59:52.520177+00:00",
         from_cache=False,
         url="http://test",
     )
@@ -64,6 +76,8 @@ def test_serialize_default_focus_filter_prefers_hdex():
     assert {p["label"] for p in payload["rankedProfiles"]} == {"HDex", "HInt"}
     assert payload["rankedAugs"][0]["focusLabel"] == "HDex"
     assert payload["rankedAugs"][1]["focusLabel"] == "HInt"
+    assert payload["appVersion"] == __version__
+    assert payload["catalogFetchedAt"] == "2026-08-12 18:59 UTC"
 
 
 def test_serialize_farm_list_and_eqresource_links():

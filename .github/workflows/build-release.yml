@@ -42,3 +42,18 @@ jobs:
           files: dist/EQAugs-${{ steps.version.outputs.version }}.exe
           generate_release_notes: true
           make_latest: true
+
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set" >&2
+            exit 1
+          fi
+          version="${{ steps.version.outputs.version }}"
+          repo="${{ github.repository }}"
+          payload=$(printf '%s' "{\"content\":\"**EQ Augs %s** released.\\nRelease: https://github.com/%s/releases/tag/v%s\\nDownload: https://github.com/%s/releases/latest/download/EQAugs-%s.exe\"}" \
+            "$version" "$repo" "$version" "$repo" "$version")
+          curl -fsS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"

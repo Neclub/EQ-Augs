@@ -524,6 +524,7 @@ function renderMeta() {
     `Artisan's Prize: ${REPORT.artisansPrizeOwned ? "owned" : "not owned"}`,
     `Anniversary augs: ${REPORT.includeAnniversary ? "included" : "excluded"}`,
     REPORT.catalogFromCache ? `Catalog: cache (${REPORT.catalogFetchedAt})` : `Catalog: live (${REPORT.catalogFetchedAt})`,
+    REPORT.appVersion ? `EQ Augs ${REPORT.appVersion}` : null,
   ].filter(Boolean).join(" · ");
   document.getElementById("meta").textContent = meta;
 }

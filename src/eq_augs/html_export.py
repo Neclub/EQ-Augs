@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from eq_augs import __version__
 from eq_augs.compare import NEEDS_UPGRADE_STATUSES, REPORT_ROW_STATUSES
 from eq_augs.export_bundle import ExportBundle
 from eq_augs.package_data import read_data_text
@@ -14,6 +15,14 @@ from eq_augs.roster import persona_key
 
 _REPORT_JSON_MARKER = "/*__REPORT_JSON__*/"
 EQRESOURCE_ITEM_URL = "https://items.eqresource.com/items.php?id={item_id}"
+
+
+def format_catalog_fetched_at(iso: str) -> str:
+    """Shorten ISO catalog timestamps for report meta (e.g. 2026-08-12 18:59 UTC)."""
+    text = (iso or "").strip()
+    if len(text) >= 16 and text[10] == "T":
+        return f"{text[:10]} {text[11:16]} UTC"
+    return text
 
 
 def ranked_aug_type(aug: AugCandidate) -> str:
@@ -183,7 +192,8 @@ def serialize_report(bundle: ExportBundle) -> dict:
         "includeAnniversary": bundle.include_anniversary,
         "server": bundle.server,
         "warnings": bundle.warnings,
-        "catalogFetchedAt": bundle.catalog.fetched_at,
+        "appVersion": __version__,
+        "catalogFetchedAt": format_catalog_fetched_at(bundle.catalog.fetched_at),
         "catalogFromCache": bundle.catalog.from_cache,
         "catalogUrl": bundle.catalog.url,
         "showServerInColumns": bundle.show_server_in_columns,

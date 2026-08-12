@@ -8,9 +8,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from eq_augs import __version__
 from eq_augs.compare import NEEDS_UPGRADE_STATUSES, REPORT_ROW_STATUSES
-from eq_augs.profiles import PROFILE_FOCUS_LABEL
 from eq_augs.export_bundle import ExportBundle
+from eq_augs.html_export import format_catalog_fetched_at
+from eq_augs.profiles import PROFILE_FOCUS_LABEL
 
 STATUS_FILLS = {
     "bis": PatternFill("solid", fgColor="166534"),  # green
@@ -241,8 +243,9 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         f"Profile: {bundle.profile_label}",
         f"Artisan's Prize owned: {'Yes' if bundle.artisans_prize_owned else 'No'}",
         f"Anniversary augs: {'Included' if bundle.include_anniversary else 'Excluded'}",
-        f"Catalog fetched: {bundle.catalog.fetched_at}"
+        f"Catalog fetched: {format_catalog_fetched_at(bundle.catalog.fetched_at)}"
         + (" (cache)" if bundle.catalog.from_cache else ""),
+        f"EQ Augs {__version__}",
     ]
     if bundle.warnings:
         meta.extend(bundle.warnings)
