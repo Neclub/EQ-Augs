@@ -5,6 +5,7 @@ from __future__ import annotations
 import webview
 
 from eq_augs import __version__
+from eq_augs.package_data import asset_path
 from eq_augs.web_api import WebApi
 from eq_augs.web_bridge import setup_url
 
@@ -22,7 +23,11 @@ def main() -> None:
         background_color="#0b0e11",
     )
     api.bind_window(window)
-    webview.start(debug=False)
+    icon = asset_path("eq-icon.ico")
+    start_kwargs: dict = {"debug": False}
+    if icon.is_file():
+        start_kwargs["icon"] = str(icon.resolve())
+    webview.start(**start_kwargs)
 
 
 if __name__ == "__main__":

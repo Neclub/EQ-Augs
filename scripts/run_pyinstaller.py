@@ -79,6 +79,13 @@ def main() -> int:
     version_info = _ROOT / "build" / "EQAugs_version_info.txt"
     _write_version_info(version_info, version, exe_name)
 
+    prepare = _ROOT / "scripts" / "prepare_app_icon.py"
+    if prepare.is_file() and (_ROOT / "Icon" / "Icon.png").is_file():
+        print("Refreshing app icons from Icon/Icon.png…")
+        rc = subprocess.call([sys.executable, str(prepare)], cwd=str(_ROOT))
+        if rc != 0:
+            return rc
+
     entry = _ROOT / "scripts" / "pyinstaller_gui.py"
     args = [
         sys.executable,

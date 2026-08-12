@@ -12,6 +12,7 @@ from eq_augs.package_data import read_data_text
 from eq_augs.profiles import PROFILE_FOCUS_LABEL, PROFILE_LABELS
 from eq_augs.raidloot import AugCandidate
 from eq_augs.roster import persona_key
+from eq_augs.web_bridge import report_logo_data_uri
 
 _REPORT_JSON_MARKER = "/*__REPORT_JSON__*/"
 EQRESOURCE_ITEM_URL = "https://items.eqresource.com/items.php?id={item_id}"
@@ -193,6 +194,7 @@ def serialize_report(bundle: ExportBundle) -> dict:
         "server": bundle.server,
         "warnings": bundle.warnings,
         "appVersion": __version__,
+        "logoDataUri": report_logo_data_uri(),
         "catalogFetchedAt": format_catalog_fetched_at(bundle.catalog.fetched_at),
         "catalogFromCache": bundle.catalog.from_cache,
         "catalogUrl": bundle.catalog.url,

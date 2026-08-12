@@ -78,6 +78,7 @@ def test_serialize_default_focus_filter_prefers_hdex():
     assert payload["rankedAugs"][1]["focusLabel"] == "HInt"
     assert payload["appVersion"] == __version__
     assert payload["catalogFetchedAt"] == "2026-08-12 18:59 UTC"
+    assert payload["logoDataUri"].startswith("data:image/png;base64,")
 
 
 def test_serialize_farm_list_and_eqresource_links():

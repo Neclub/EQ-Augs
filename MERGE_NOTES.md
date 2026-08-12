@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.5`
+**Standalone version:** `0.3.6`
 
 ## Purpose of this app
 
@@ -295,6 +295,10 @@ Status colors: bis green, upgrade amber, empty red, unknown blue-gray, no_fit gr
   Need to farm and Ranked reference start collapsed.
 - Report meta line: short catalog time (`YYYY-MM-DD HH:MM UTC`) plus `EQ Augs {version}`
   from `__version__` (Excel Ranked Augs header uses the same).
+- Top bar: character filter beside status legend (BiS / Upgrade / Empty / Unknown); no row-count
+  badge. Right side embeds circular `eq-report-logo.png` via `logoDataUri` in report JSON.
+- Packaged branding: `scripts/prepare_app_icon.py` (exe/window `eq-icon.ico`) and
+  `scripts/prepare_report_logo.py` (HTML header mark).
 
 ## Dependencies
 
@@ -331,7 +335,8 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.5`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.6`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
+- Icons: `Icon/Icon.png` / `Icon/report-logo-source.png` → `src/eq_augs/assets/`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.
