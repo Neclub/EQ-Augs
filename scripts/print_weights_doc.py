@@ -1,4 +1,4 @@
-"""Generate Example/Aug_Selection_Weights.txt from packaged weight JSON."""
+"""Generate docs/Aug_Selection_Weights.txt from packaged weight JSON."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from eq_augs.weights import clear_weights_cache, class_role, resolve_weights
 
 ROOT = Path(__file__).resolve().parents[1]
 WEIGHTS = ROOT / "src" / "eq_augs" / "data" / "weights"
-OUT = ROOT / "Example" / "Aug_Selection_Weights.txt"
+OUT = ROOT / "docs" / "Aug_Selection_Weights.txt"
 
 ROLE_ORDER = ("tank", "priest", "pure_caster", "melee_dps", "hybrid_dps")
 ROLE_TITLES = {
@@ -74,13 +74,11 @@ def main() -> None:
         "Artisan's Prize, anniversary Distant Echoes gems) are separate from scoring."
     )
     out.append("")
-    out.append("Caster note:")
-    out.append(
-        "  pure_caster priority: Spell Damage (10) > HInt (8) > Clairvoyance > HP > Mana."
-    )
-    out.append(
-        "  Mana weight stays low (2.5) so large Mana pools do not outrank SD / HInt."
-    )
+    out.append("Simplified focus stats:")
+    out.append("  tank:        AC (10) > HDex (8)")
+    out.append("  priest:      HWis (10)")
+    out.append("  pure_caster: Spell Damage (10) > HInt (8)")
+    out.append("  melee_dps / hybrid_dps: HDex (10)")
     out.append("")
 
     out.append("1. ROLE BASE WEIGHTS")
@@ -150,6 +148,7 @@ def main() -> None:
     out.append("PAL Secondary (shield)")
     out.append(fmt_weights(weights))
 
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(out) + "\n", encoding="utf-8")
     print(f"Wrote {OUT}")
 

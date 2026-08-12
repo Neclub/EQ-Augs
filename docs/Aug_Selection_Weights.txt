@@ -1,0 +1,181 @@
+EQ Augs — Aug Selection Weights
+========================================================================
+
+Source files: src/eq_augs/data/weights/{roles,classes,slot_overlays}.json
+Optional overrides: %LOCALAPPDATA%\EQ Augs\weight_overrides.json
+Score = sum(stat_value * weight) for each known stat on the aug.
+Missing stats contribute 0. Fit filters (Charm/Range/Feet/Shield,
+Artisan's Prize, anniversary Distant Echoes gems) are separate from scoring.
+
+Simplified focus stats:
+  tank:        AC (10) > HDex (8)
+  priest:      HWis (10)
+  pure_caster: Spell Damage (10) > HInt (8)
+  melee_dps / hybrid_dps: HDex (10)
+
+1. ROLE BASE WEIGHTS
+------------------------------------------------------------------------
+
+Tank (tank)
+  AC                   10.00
+  HDex                  8.00
+
+Priest (priest)
+  HWis                 10.00
+
+Pure Caster (pure_caster)
+  Spell Damage         10.00
+  HInt                  8.00
+
+Melee DPS (melee_dps)
+  HDex                 10.00
+
+Hybrid DPS (hybrid_dps)
+  HDex                 10.00
+
+2. CLASS MODIFIERS (added to role base)
+------------------------------------------------------------------------
+
+--- Tank ---
+PAL  catalog=dex
+  (no modifiers)
+SHD  catalog=dex
+  (no modifiers)
+WAR  catalog=dex
+  (no modifiers)
+
+--- Priest ---
+CLR  catalog=wis
+  (no modifiers)
+DRU  catalog=wis
+  (no modifiers)
+SHM  catalog=wis
+  (no modifiers)
+
+--- Pure Caster ---
+ENC  catalog=int
+  (no modifiers)
+MAG  catalog=int
+  (no modifiers)
+NEC  catalog=int
+  (no modifiers)
+WIZ  catalog=int
+  (no modifiers)
+
+--- Melee DPS ---
+BER  catalog=dex
+  (no modifiers)
+MNK  catalog=dex
+  (no modifiers)
+ROG  catalog=dex
+  (no modifiers)
+
+--- Hybrid DPS ---
+BRD  catalog=dex
+  (no modifiers)
+BST  catalog=dex
+  (no modifiers)
+RNG  catalog=dex
+  (no modifiers)
+
+3. SLOT OVERLAYS (added when slot/class match)
+------------------------------------------------------------------------
+
+feet_high_ac
+  slots: Feet
+  classes: WAR, MNK, RNG, BST, BRD
+  AC                   80.00
+  note: effective Feet weights become AC-only (other stats dropped after merge)
+
+shield_secondary
+  slots: Secondary
+  classes: (all)
+  require_shield: true
+  AC                   40.00
+  HDex                 -6.00
+
+4. EFFECTIVE WEIGHTS BY CLASS (Head slot — no overlay)
+------------------------------------------------------------------------
+
+WAR  role=tank
+  AC                   10.00
+  HDex                  8.00
+
+SHD  role=tank
+  AC                   10.00
+  HDex                  8.00
+
+PAL  role=tank
+  AC                   10.00
+  HDex                  8.00
+
+CLR  role=priest
+  HWis                 10.00
+
+DRU  role=priest
+  HWis                 10.00
+
+SHM  role=priest
+  HWis                 10.00
+
+WIZ  role=pure_caster
+  Spell Damage         10.00
+  HInt                  8.00
+
+MAG  role=pure_caster
+  Spell Damage         10.00
+  HInt                  8.00
+
+NEC  role=pure_caster
+  Spell Damage         10.00
+  HInt                  8.00
+
+ENC  role=pure_caster
+  Spell Damage         10.00
+  HInt                  8.00
+
+ROG  role=melee_dps
+  HDex                 10.00
+
+MNK  role=melee_dps
+  HDex                 10.00
+
+BER  role=melee_dps
+  HDex                 10.00
+
+RNG  role=hybrid_dps
+  HDex                 10.00
+
+BST  role=hybrid_dps
+  HDex                 10.00
+
+BRD  role=hybrid_dps
+  HDex                 10.00
+
+5. FEET OVERLAY EFFECTIVE (WAR / MNK / RNG / BST / BRD)
+------------------------------------------------------------------------
+
+WAR Feet
+  AC                   90.00
+
+MNK Feet
+  AC                   80.00
+
+RNG Feet
+  AC                   80.00
+
+BST Feet
+  AC                   80.00
+
+BRD Feet
+  AC                   80.00
+
+ROG Feet
+  HDex                 10.00
+
+6. SHIELD SECONDARY OVERLAY (PAL Secondary shield)
+------------------------------------------------------------------------
+
+PAL Secondary (shield)
+  AC                   50.00
+  HDex                  2.00

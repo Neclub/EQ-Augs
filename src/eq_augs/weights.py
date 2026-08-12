@@ -265,7 +265,7 @@ def default_class_weights(
 
     role = class_role(key) or _default_role_for_profile(resolved_profile)
     weights = resolve_weights(key, "Head", profile=resolved_profile)
-    # Stable UI order: STAT_KEYS, always include Attack/Heal/SD/Clairvoyance,
+    # Stable UI order: STAT_KEYS, always include focus stats (AC/HDex/HInt/HWis/SD),
     # never Accuracy / Combat Effects / Shielding / Stun Resist.
     ordered: dict[str, float] = {}
     for k in STAT_KEYS:

@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.2`
+**Standalone version:** `0.3.3`
 
 ## Purpose of this app
 
@@ -104,7 +104,7 @@ Wire in `WebApi.generate_report` after `build_export_bundle`:
 
 ## Raidloot / cache
 
-- URLs live in `eq_augs.profiles.RAIDLOOT_URLS` (from `Example/Type 7 and 8 augs.txt`).
+- URLs live in `eq_augs.profiles.RAIDLOOT_URLS`.
 - Cache path: `%LOCALAPPDATA%\EQ Augs\raidloot_cache.json`
 - Item socket cache: `%LOCALAPPDATA%\EQ Augs\item_sockets_cache.json`
 - EQ Resource aug stats: `%LOCALAPPDATA%\EQ Augs\eqresource_aug_cache.json`
@@ -164,11 +164,20 @@ Recommendations rank legal (slot-fitting) augs by:
 
 `score = Σ(stat × weight)` where weights = role base ⊕ class modifiers ⊕ slot overlay.
 
+Simplified role focus (class modifiers empty by default):
+
+| Role | Focus stats |
+|------|-------------|
+| tank | AC, HDex |
+| priest | HWis |
+| pure_caster | Spell Damage, HInt |
+| melee_dps / hybrid_dps | HDex |
+
 - Packaged tables: `eq_augs/data/weights/{roles,classes,slot_overlays}.json`
 - Optional overrides: `%LOCALAPPDATA%\EQ Augs\weight_overrides.json`
 - Fit filters (Charm/Range exclusions, shield-only, Ear/Artisan's Prize, anniversary)
-  stay orthogonal to scoring. Scoring uses **Attack / Heal Amount / Spell Damage /
-  Clairvoyance** instead of Accuracy / Combat Effects / Shielding / Stun Resist.
+  stay orthogonal to scoring. Advanced GUI always surfaces AC / HDex / HInt / HWis /
+  Spell Damage; Accuracy / Combat Effects / Shielding / Stun Resist stay excluded.
 - Catalog fetch remains Dex/INT/WIS raidloot filters; weights refine ranking
   within that catalog.
 
@@ -285,7 +294,7 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 
 ## Tests to port
 
-- `tests/test_parser.py` — Slot2 extraction + owned IDs against `Example/Inventory Dumps/`
+- `tests/test_parser.py` — Slot2 extraction + owned IDs (inventory dump fixtures)
 - `tests/test_raidloot.py` — slot restriction strings + HTML fixture
 - `tests/test_weights.py` — role/class merge, Feet AC-only overlay, shield overlay
 - `tests/test_compare.py` — Artisan's Prize, Charm/Range/Feet priority moves, displaced Range→Head
@@ -308,7 +317,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.2`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.3`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - After merge: fold into `inventory-parser` / `inventory-parser-gui`; drop duplicate pywebview window or add a mode tab.

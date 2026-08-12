@@ -40,8 +40,8 @@ STAT_KEYS: tuple[str, ...] = (
     "clairvoyance",
 )
 
-# Advanced GUI / scoring emphasis — Attack, Heal, Spell Damage, Clairvoyance
-# replace Accuracy, Combat Effects, Shielding, and Stun Resist.
+# Advanced GUI always surfaces the simplified focus stats (zeros when unused).
+# Accuracy / Combat Effects / Shielding / Stun Resist stay out of scoring UI.
 ADVANCED_WEIGHT_EXCLUDE: frozenset[str] = frozenset(
     {
         "accuracy",
@@ -51,10 +51,11 @@ ADVANCED_WEIGHT_EXCLUDE: frozenset[str] = frozenset(
     }
 )
 ADVANCED_WEIGHT_ALWAYS: tuple[str, ...] = (
-    "atk",
-    "heal_amount",
+    "ac",
+    "hdex",
+    "hint",
+    "hwis",
     "spell_damage",
-    "clairvoyance",
 )
 
 # Short labels for upgrade notes / UI.

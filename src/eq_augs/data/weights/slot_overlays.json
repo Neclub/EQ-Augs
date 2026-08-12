@@ -16,14 +16,7 @@
       "require_shield": true,
       "modifiers": {
         "ac": 40.0,
-        "hp": -4.0,
-        "hdex": -6.0,
-        "hint": -6.0,
-        "hwis": -6.0,
-        "atk": -3.0,
-        "spell_damage": -3.0,
-        "heal_amount": -3.0,
-        "mana": -2.0
+        "hdex": -6.0
       }
     }
   ]

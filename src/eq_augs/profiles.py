@@ -35,7 +35,7 @@ SHIELD_AUG_URL = (
     "https://www.raidloot.com/items?type=Aug_Shield&augslot=7%2C8&order=AC"
 )
 
-# Raidloot filter URLs from Example/Type 7 and 8 augs.txt
+# Raidloot filter URLs (Dex / INT / WIS type 7/8 catalogs)
 RAIDLOOT_URLS: dict[ProfileId, str] = {
     "dex": (
         "https://www.raidloot.com/items/augs?augslot=7%2C8&level=&source="

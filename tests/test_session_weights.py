@@ -21,10 +21,11 @@ def test_default_class_weights_war():
     assert info["profile"] == "dex"
     assert "Dex" in info["profileLabel"]
     assert info["role"] == "tank"
-    assert info["weights"]["ac"] >= 10.0
+    assert info["weights"]["ac"] == 10.0
+    assert info["weights"]["hdex"] == 8.0
     assert "ac" in info["labels"]
-    # Replacement combat categories always present; retired ones absent.
-    for key in ("atk", "heal_amount", "spell_damage", "clairvoyance"):
+    # Focus stats always present in Advanced GUI; retired ones absent.
+    for key in ("ac", "hdex", "hint", "hwis", "spell_damage"):
         assert key in info["weights"]
     for key in ("accuracy", "combat_effects", "shielding", "stun_resist"):
         assert key not in info["weights"]

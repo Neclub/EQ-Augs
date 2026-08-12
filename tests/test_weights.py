@@ -33,14 +33,18 @@ def _aug(**kwargs) -> AugCandidate:
 
 def test_role_class_merge_warrior():
     w = resolve_weights("WAR", "Head")
-    assert w["ac"] >= 10.0  # tank 10 + war +1
-    assert w["hdex"] >= 8.0
-    assert w.get("atk", 0) >= 3.0
-    assert w.get("heal_amount", 0) > 0
+    assert w == {"ac": 10.0, "hdex": 8.0}
     assert "accuracy" not in w
     assert "combat_effects" not in w
     assert "shielding" not in w
     assert "stun_resist" not in w
+
+
+def test_simplified_role_focus_stats():
+    assert resolve_weights("ROG", "Head") == {"hdex": 10.0}
+    assert resolve_weights("RNG", "Head") == {"hdex": 10.0}
+    assert resolve_weights("CLR", "Head") == {"hwis": 10.0}
+    assert resolve_weights("WIZ", "Head") == {"spell_damage": 10.0, "hint": 8.0}
 
 
 def test_feet_overlay_war_not_rog():
@@ -51,7 +55,8 @@ def test_feet_overlay_war_not_rog():
     assert not uses_feet_overlay("ROG")
     rog_feet = resolve_weights("ROG", "Feet")
     rog_head = resolve_weights("ROG", "Head")
-    assert rog_feet["ac"] == rog_head["ac"]
+    assert rog_feet.get("ac", 0) == rog_head.get("ac", 0)
+    assert rog_feet == rog_head
 
 
 def test_feet_ac_dominates_other_weights():

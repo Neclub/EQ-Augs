@@ -4,140 +4,82 @@
     "WAR": {
       "role": "tank",
       "profile": "dex",
-      "modifiers": {
-        "ac": 1.0,
-        "hdex": 1.0,
-        "endurance": 0.5
-      }
+      "modifiers": {}
     },
     "SHD": {
       "role": "tank",
       "profile": "dex",
-      "modifiers": {
-        "mana": 2.0,
-        "spell_damage": 1.0,
-        "hp": 0.5
-      }
+      "modifiers": {}
     },
     "PAL": {
       "role": "tank",
       "profile": "dex",
-      "modifiers": {
-        "heal_amount": 2.0,
-        "mana": 2.0,
-        "hwis": 1.0
-      }
+      "modifiers": {}
     },
     "CLR": {
       "role": "priest",
       "profile": "wis",
-      "modifiers": {
-        "heal_amount": 1.0,
-        "clairvoyance": 0.5
-      }
+      "modifiers": {}
     },
     "DRU": {
       "role": "priest",
       "profile": "wis",
-      "modifiers": {
-        "spell_damage": 1.5,
-        "hp": 0.5
-      }
+      "modifiers": {}
     },
     "SHM": {
       "role": "priest",
       "profile": "wis",
-      "modifiers": {
-        "spell_damage": 1.0,
-        "atk": 0.5
-      }
+      "modifiers": {}
     },
     "WIZ": {
       "role": "pure_caster",
       "profile": "int",
-      "modifiers": {
-        "spell_damage": 1.0,
-        "clairvoyance": -0.5
-      }
+      "modifiers": {}
     },
     "MAG": {
       "role": "pure_caster",
       "profile": "int",
-      "modifiers": {
-        "hp": 1.0,
-        "ac": 0.5
-      }
+      "modifiers": {}
     },
     "NEC": {
       "role": "pure_caster",
       "profile": "int",
-      "modifiers": {
-        "hp": 1.5,
-        "dot_shield": 1.0,
-        "spell_damage": 0.5
-      }
+      "modifiers": {}
     },
     "ENC": {
       "role": "pure_caster",
       "profile": "int",
-      "modifiers": {
-        "clairvoyance": 2.0,
-        "mana": 1.0,
-        "spell_damage": -1.0
-      }
+      "modifiers": {}
     },
     "ROG": {
       "role": "melee_dps",
       "profile": "dex",
-      "modifiers": {
-        "atk": 1.0,
-        "strikethrough": 1.0
-      }
+      "modifiers": {}
     },
     "MNK": {
       "role": "melee_dps",
       "profile": "dex",
-      "modifiers": {
-        "ac": 1.5,
-        "hagi": 1.0,
-        "avoidance": 1.0
-      }
+      "modifiers": {}
     },
     "BER": {
       "role": "melee_dps",
       "profile": "dex",
-      "modifiers": {
-        "hstr": 1.5,
-        "atk": 1.0,
-        "endurance": 0.5
-      }
+      "modifiers": {}
     },
     "RNG": {
       "role": "hybrid_dps",
       "profile": "dex",
-      "modifiers": {
-        "atk": 1.0,
-        "spell_damage": 1.0,
-        "ac": 0.5
-      }
+      "modifiers": {}
     },
     "BST": {
       "role": "hybrid_dps",
       "profile": "dex",
-      "modifiers": {
-        "hp": 1.0,
-        "heal_amount": 0.5,
-        "mana": 0.5
-      }
+      "modifiers": {}
     },
     "BRD": {
       "role": "hybrid_dps",
       "profile": "dex",
-      "modifiers": {
-        "hcha": 1.0,
-        "mana": 1.0,
-        "ac": 0.5
-      }
+      "modifiers": {}
     }
   }
 }
