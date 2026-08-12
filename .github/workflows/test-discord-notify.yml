@@ -1,0 +1,23 @@
+name: Test Discord Notify
+
+on:
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post test message to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set" >&2
+            exit 1
+          fi
+          version="0.3.5"
+          repo="${{ github.repository }}"
+          payload=$(printf '{"content":"**EQ Augs %s** released (notify test).\\nRelease: https://github.com/%s/releases/tag/v%s\\nDownload: https://github.com/%s/releases/latest/download/EQAugs-%s.exe"}' \
+            "$version" "$repo" "$version" "$repo" "$version")
+          curl -fsS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+          echo "Discord notify succeeded."

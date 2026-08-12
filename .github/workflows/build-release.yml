@@ -55,6 +55,6 @@ jobs:
           fi
           version="${{ steps.version.outputs.version }}"
           repo="${{ github.repository }}"
-          payload=$(printf '%s' "{\"content\":\"**EQ Augs %s** released.\\nRelease: https://github.com/%s/releases/tag/v%s\\nDownload: https://github.com/%s/releases/latest/download/EQAugs-%s.exe\"}" \
+          payload=$(printf '{"content":"**EQ Augs %s** released.\\nRelease: https://github.com/%s/releases/tag/v%s\\nDownload: https://github.com/%s/releases/latest/download/EQAugs-%s.exe"}' \
             "$version" "$repo" "$version" "$repo" "$version")
           curl -fsS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
