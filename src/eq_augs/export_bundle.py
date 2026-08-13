@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -26,6 +27,64 @@ from eq_augs.parser import (
 from eq_augs.profiles import PROFILE_LABELS, ProfileId, normalize_profile, profile_for_class
 from eq_augs.raidloot import AugCandidate, CatalogResult, fetch_catalog
 from eq_augs.roster import RosterEntry, build_roster, export_prefix_from_roster, persona_key
+
+ProgressFn = Callable[[dict], None]
+
+# Stage fraction ranges for determinate GUI progress (write stage is 0.95–1.0 in web_api).
+_PROGRESS_PARSE = (0.00, 0.05)
+_PROGRESS_CLASSES = (0.05, 0.12)
+_PROGRESS_SOCKETS = (0.12, 0.45)
+_PROGRESS_CATALOG = (0.45, 0.65)
+_PROGRESS_COMPARE = (0.65, 0.88)
+_PROGRESS_EXPANSIONS = (0.88, 0.95)
+
+
+def report_progress(
+    on_progress: ProgressFn | None,
+    message: str,
+    start: float,
+    end: float,
+    i: int = 1,
+    n: int = 1,
+) -> None:
+    """Emit a progress payload with fraction in ``[start, end]`` for step ``i`` of ``n``."""
+    if on_progress is None:
+        return
+    if n <= 0:
+        fraction = end
+    else:
+        fraction = start + (end - start) * (i / n)
+    on_progress(
+        {
+            "message": message,
+            "fraction": min(1.0, max(0.0, fraction)),
+        }
+    )
+
+
+def _range_item_progress(
+    on_progress: ProgressFn | None,
+    message: str,
+    start: float,
+    end: float,
+) -> Callable[[int, int], None] | None:
+    if on_progress is None:
+        return None
+
+    def _cb(done: int, total: int) -> None:
+        if total <= 0:
+            report_progress(on_progress, message, start, end, 1, 1)
+        else:
+            report_progress(
+                on_progress,
+                f"{message} ({done}/{total})",
+                start,
+                end,
+                done,
+                total,
+            )
+
+    return _cb
 
 
 @dataclass
@@ -123,6 +182,7 @@ def build_export_bundle(
     catalog_html: str | None = None,
     shield_catalog_html: str | None = None,
     session_weights: dict[str, float] | None = None,
+    on_progress: ProgressFn | None = None,
 ) -> ExportBundle:
     """Parse inventories, fetch raidloot catalog(s), and compare Slot2 augs.
 
@@ -133,11 +193,18 @@ def build_export_bundle(
     from the equipped Chest item's Class line (raidloot / EQ Resource). Each
     character then uses the aug profile for that class (Dex / INT / WIS).
 
+    ``on_progress`` receives ``{"message": str, "fraction": float}`` updates for
+    stages through expansion resolve (fractions up to 0.95). File write progress
+    is reported by the GUI worker.
+
     Test hooks: ``socket_overrides``, ``type78_slot_by_parent_id``,
     ``chest_class_overrides``, ``catalog_html``.
     """
     fallback_profile = normalize_profile(str(profile))
     warnings: list[str] = []
+
+    p0, p1 = _PROGRESS_PARSE
+    report_progress(on_progress, "Parsing inventories…", p0, p1, 0, 1)
 
     files: list[Path] = []
     for raw in input_paths:
@@ -166,16 +233,24 @@ def build_export_bundle(
             continue
         inventories.append(data)
 
+    report_progress(on_progress, "Parsing inventories…", p0, p1, 1, 1)
+
     explicit_by_path: dict[str, str | None] = {}
     for e in roster:
         explicit_by_path[str(Path(e.path))] = e.class_abbr
 
+    c0, c1 = _PROGRESS_CLASSES
+    report_progress(on_progress, "Resolving character classes…", c0, c1, 0, 1)
     class_by_path = resolve_classes_for_inventories(
         inventories,
         explicit_by_path=explicit_by_path,
         overrides=chest_class_overrides,
         allow_network=fetch_chest_class,
+        on_progress=_range_item_progress(
+            on_progress, "Resolving character classes…", c0, c1
+        ),
     )
+    report_progress(on_progress, "Resolving character classes…", c0, c1, 1, 1)
 
     # Apply detected classes onto inventory + roster for export metadata.
     enriched_roster: list[RosterEntry] = []
@@ -212,11 +287,17 @@ def build_export_bundle(
     for data in inventories:
         parent_ids.extend(collect_equipped_parent_ids(data))
 
+    s0, s1 = _PROGRESS_SOCKETS
     if type78_slot_by_parent_id is None:
+        report_progress(on_progress, "Resolving item sockets…", s0, s1, 0, 1)
         type78_slot_by_parent_id = resolve_type78_slots(
             parent_ids,
             overrides=socket_overrides,
+            on_progress=_range_item_progress(
+                on_progress, "Resolving item sockets…", s0, s1
+            ),
         )
+    report_progress(on_progress, "Resolving item sockets…", s0, s1, 1, 1)
 
     # Profile per character from class; fall back to GUI/default profile.
     char_profiles: list[ProfileId] = []
@@ -254,6 +335,23 @@ def build_export_bundle(
             )
         return catalogs[pid]
 
+    cat0, cat1 = _PROGRESS_CATALOG
+    profiles_needed = list(dict.fromkeys([primary_profile, *char_profiles]))
+    n_profiles = len(profiles_needed)
+    report_progress(
+        on_progress, "Fetching raidloot catalog…", cat0, cat1, 0, max(n_profiles, 1)
+    )
+    for i, pid in enumerate(profiles_needed, start=1):
+        catalog_for(pid)
+        report_progress(
+            on_progress,
+            f"Fetching raidloot catalog… ({i}/{n_profiles})",
+            cat0,
+            cat1,
+            i,
+            n_profiles,
+        )
+
     # Ensure primary catalog exists for ranked list / bundle.catalog.
     primary_catalog = catalog_for(primary_profile)
 
@@ -265,8 +363,16 @@ def build_export_bundle(
     )
     from eq_augs.weights import session_absolute_weights
 
+    cmp0, cmp1 = _PROGRESS_COMPARE
+    n_chars = len(inventories)
+    report_progress(
+        on_progress, "Comparing characters…", cmp0, cmp1, 0, max(n_chars, 1)
+    )
+
     with session_absolute_weights(active_session_weights):
-        for data, char_profile in zip(inventories, char_profiles):
+        for i, (data, char_profile) in enumerate(
+            zip(inventories, char_profiles), start=1
+        ):
             report = compare_character(
                 data,
                 catalog_for(char_profile),
@@ -280,6 +386,14 @@ def build_export_bundle(
             characters.append(report)
             if data.server:
                 servers.append(data.server)
+            report_progress(
+                on_progress,
+                f"Comparing characters… ({i}/{n_chars})",
+                cmp0,
+                cmp1,
+                i,
+                max(n_chars, 1),
+            )
 
         if active_session_weights:
             warnings.append(
@@ -294,12 +408,18 @@ def build_export_bundle(
                     continue
                 if cmp_.recommended_id and cmp_.recommended_id > 0:
                     rec_ids.append(cmp_.recommended_id)
+        e0, e1 = _PROGRESS_EXPANSIONS
+        report_progress(on_progress, "Resolving expansions…", e0, e1, 0, 1)
         expansions = resolve_item_expansions(
             rec_ids,
             html_overrides=eqr_aug_html_by_id,
             allow_network=fetch_expansions,
+            on_progress=_range_item_progress(
+                on_progress, "Resolving expansions…", e0, e1
+            ),
         )
         characters = apply_expansions_to_characters(characters, expansions)
+        report_progress(on_progress, "Resolving expansions…", e0, e1, 1, 1)
 
         # Ranked reference: top augs for every profile present on the roster,
         # ordered by weighted score for a representative class of that profile.

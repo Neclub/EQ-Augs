@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from eq_augs.parser import InventoryData, InventoryItem
 from eq_augs.profiles import CLASS_TO_PROFILE, ProfileId, profile_for_class
@@ -289,11 +289,13 @@ def resolve_classes_for_inventories(
     overrides: dict[int, tuple[str | None, str | None]] | None = None,
     allow_network: bool = True,
     polite_delay_s: float = 0.05,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> dict[str, str | None]:
     """
     Map inventory filepath → class abbr.
 
     Batches unique Chest item ids so each armor is fetched once.
+    ``on_progress(done, total)`` is called after each chest fetch (1-based done).
     """
     explicit_by_path = {
         str(Path(k)): (v.strip().upper() if v else None)
@@ -323,7 +325,12 @@ def resolve_classes_for_inventories(
 
     fetched_live = 0
     class_by_item: dict[int, str | None] = {}
-    for item_id in sorted(need_fetch):
+    fetch_ids = sorted(need_fetch)
+    total = len(fetch_ids)
+    if total == 0 and on_progress is not None:
+        on_progress(0, 0)
+
+    for i, item_id in enumerate(fetch_ids, start=1):
         ov = overrides.get(item_id)
         if ov is not None:
             classes = fetch_item_classes(
@@ -337,6 +344,8 @@ def resolve_classes_for_inventories(
         else:
             classes = []
         class_by_item[item_id] = primary_class_from_list(classes)
+        if on_progress is not None:
+            on_progress(i, total)
 
     for item_id, paths in need_fetch.items():
         abbr = class_by_item.get(item_id)

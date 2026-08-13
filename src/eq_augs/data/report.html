@@ -9,6 +9,7 @@
   --bg: #0b0e11;
   --panel: #141820;
   --panel-hover: #1a2030;
+  --row-alt: #191e28;
   --header: #1e2430;
   --text: #eef0f4;
   --muted: #8b93a7;
@@ -300,6 +301,14 @@ tbody tr {
   transition: background 0.12s ease;
 }
 tbody tr:hover {
+  background: var(--panel-hover);
+}
+#farmCard tbody tr:nth-child(even),
+#rankedCard tbody tr:nth-child(even) {
+  background: var(--row-alt);
+}
+#farmCard tbody tr:hover,
+#rankedCard tbody tr:hover {
   background: var(--panel-hover);
 }
 tbody tr.status-bis {

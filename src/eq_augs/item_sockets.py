@@ -11,7 +11,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 USER_AGENT = "EQ-Augs/0.2 (Slot2 type 7/8 checker; local tool)"
 CACHE_FILENAME = "item_sockets_cache.json"
@@ -200,19 +200,25 @@ def resolve_type78_slots(
     force_refresh: bool = False,
     overrides: dict[int, tuple[str | None, str | None]] | None = None,
     polite_delay_s: float = 0.05,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> dict[int, int | None]:
     """
     Map parent item IDs → dump SlotN for the first type 7/8 hole.
 
     Values are ``None`` when no type 7/8 socket was found.
     ``overrides`` maps item_id → (raidloot_html, eqr_html) for tests.
+    ``on_progress(done, total)`` is called after each item (1-based done).
     """
     result: dict[int, int | None] = {}
     unique = sorted({int(i) for i in item_ids if int(i) > 0})
     overrides = overrides or {}
     fetched_live = 0
+    total = len(unique)
 
-    for item_id in unique:
+    if total == 0 and on_progress is not None:
+        on_progress(0, 0)
+
+    for i, item_id in enumerate(unique, start=1):
         ov = overrides.get(item_id)
         if ov is not None:
             sock_map = fetch_item_sockets(
@@ -227,5 +233,7 @@ def resolve_type78_slots(
             if not sock_map.from_cache:
                 fetched_live += 1
         result[item_id] = type78_dump_slot(sock_map.sockets)
+        if on_progress is not None:
+            on_progress(i, total)
 
     return result

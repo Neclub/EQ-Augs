@@ -123,16 +123,53 @@ function refreshUI() {
   const n = state.roster.length;
   const single = n === 1;
   const servers = new Set(state.roster.map((e) => (e.server || "").toLowerCase()).filter(Boolean));
-  let status = "Ready • No files loaded";
-  if (n) {
-    const serverNote = servers.size > 1 ? ` • ${servers.size} servers` : "";
-    status = `Ready • ${n} character${n === 1 ? "" : "s"}${serverNote}`;
+  if (!state.generating) {
+    let status = "Ready • No files loaded";
+    if (n) {
+      const serverNote = servers.size > 1 ? ` • ${servers.size} servers` : "";
+      status = `Ready • ${n} character${n === 1 ? "" : "s"}${serverNote}`;
+    }
+    $("status").textContent = status;
+    $("status").classList.toggle("ok", n > 0);
   }
-  $("status").textContent = status;
-  $("status").classList.toggle("ok", n > 0);
   $("btnGenerate").disabled = state.generating || n === 0;
   syncOutputFormatChips();
   syncOptionsTabs(single);
+}
+
+function formatElapsed(seconds) {
+  const s = Number(seconds);
+  if (!Number.isFinite(s) || s < 0) return "";
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  const rem = Math.round(s % 60);
+  return `${m}m ${String(rem).padStart(2, "0")}s`;
+}
+
+function showGenProgress(fraction, message) {
+  const wrap = $("genProgress");
+  const bar = $("genProgressBar");
+  if (!wrap || !bar) return;
+  const pct = Math.max(0, Math.min(100, Math.round((Number(fraction) || 0) * 1000) / 10));
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden", "false");
+  wrap.setAttribute("aria-valuenow", String(Math.round(pct)));
+  bar.style.width = `${pct}%`;
+  if (message) {
+    $("status").textContent = message;
+    $("status").classList.remove("ok");
+  }
+}
+
+function hideGenProgress() {
+  const wrap = $("genProgress");
+  const bar = $("genProgressBar");
+  if (wrap) {
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.setAttribute("aria-valuenow", "0");
+  }
+  if (bar) bar.style.width = "0%";
 }
 
 function setOptionsTab(tab) {
@@ -480,7 +517,7 @@ async function generate() {
   state.filePaths = state.roster.map((e) => e.path);
   state.generating = true;
   refreshUI();
-  $("status").textContent = "Fetching raidloot catalog and building report…";
+  showGenProgress(0, "Fetching raidloot catalog and building report…");
   try {
     const useAdvanced =
       state.roster.length === 1 &&
@@ -500,28 +537,40 @@ async function generate() {
     });
     if (!result || !result.ok) {
       state.generating = false;
+      hideGenProgress();
       refreshUI();
       showToast((result && result.error) || "Generate failed", true);
     }
   } catch (e) {
     state.generating = false;
+    hideGenProgress();
     refreshUI();
     showToast(String(e.message || e), true);
   }
 }
 
+window.onGenerateProgress = function (payload) {
+  if (!payload) return;
+  showGenProgress(payload.fraction, payload.message);
+};
+
 window.onGenerateComplete = function (result) {
   state.generating = false;
+  hideGenProgress();
   refreshUI();
   if (!result || !result.ok) {
     showToast((result && result.error) || "Generate failed", true);
     $("status").textContent = "Error";
+    $("status").classList.remove("ok");
     return;
   }
   const parts = [];
   if (result.xlsx) parts.push(result.xlsx);
   if (result.html) parts.push(result.html);
-  $("status").textContent = `Done • ${result.characterCount} character(s)`;
+  const elapsed = formatElapsed(result.elapsedSeconds);
+  $("status").textContent = elapsed
+    ? `Done • ${result.characterCount} character(s) • ${elapsed}`
+    : `Done • ${result.characterCount} character(s)`;
   $("status").classList.add("ok");
   let msg = `Report saved${result.fromCache ? " (used cached raidloot data)" : ""}`;
   if (parts.length) msg += `\n${parts.join("\n")}`;

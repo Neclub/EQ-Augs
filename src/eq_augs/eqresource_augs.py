@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from eq_augs.aug_stats import (
     ATTR_BASE,
@@ -265,14 +265,22 @@ def resolve_item_expansions(
     html_overrides: dict[int, str] | None = None,
     polite_delay_s: float = 0.05,
     allow_network: bool = True,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> dict[int, str]:
-    """Batch-resolve expansion names for item ids (recommended upgrades / farm list)."""
+    """Batch-resolve expansion names for item ids (recommended upgrades / farm list).
+
+    ``on_progress(done, total)`` is called after each item (1-based done).
+    """
     html_overrides = html_overrides or {}
     result: dict[int, str] = {}
     unique = sorted({int(i) for i in item_ids if int(i) > 0})
     fetched_live = 0
+    total = len(unique)
 
-    for item_id in unique:
+    if total == 0 and on_progress is not None:
+        on_progress(0, 0)
+
+    for i, item_id in enumerate(unique, start=1):
         override = html_overrides.get(item_id)
         if override is not None:
             name = fetch_item_expansion(item_id, html_override=override)
@@ -289,6 +297,8 @@ def resolve_item_expansions(
             name = fetch_item_expansion(item_id, allow_network=False)
         if name:
             result[item_id] = name
+        if on_progress is not None:
+            on_progress(i, total)
     return result
 
 

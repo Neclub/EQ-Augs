@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.7`
+**Standalone version:** `0.3.8`
 
 ## Purpose of this app
 
@@ -93,6 +93,9 @@ EQ Augs already mirrors IP roster UX (do not reinvent on merge):
 - Show server under character name when roster spans multiple servers
 - Export prefix: single char name, else shared server, else `Team`
 - Success toasts: short lifetime, bottom-left (do not cover Generate)
+- Generate progress: status line + thin determinate bar; `build_export_bundle(on_progress=…)`
+  and batch resolvers emit stage fractions; `WebApi` streams `onGenerateProgress` via
+  `evaluate_js`; Done line includes `elapsedSeconds` (e.g. `Done • 6 character(s) • 12.4s`)
 
 Wire in `WebApi.generate_report` after `build_export_bundle`:
 
@@ -293,6 +296,8 @@ Status colors: bis green, upgrade amber, empty red, unknown blue-gray, no_fit gr
 - Item links → EQ Resource; ownership / move / craft-component badges; expansion column.
 - Collapsible cards: Stat summary, Slot recommendations, Need to farm, Ranked reference;
   Need to farm and Ranked reference start collapsed.
+- Need to farm / Ranked reference tables: alternating row backgrounds (`--row-alt`) for
+  lateral readability (Slot recommendations keep status-colored rows).
 - Report meta line: short catalog time (`YYYY-MM-DD HH:MM UTC`) plus `EQ Augs {version}`
   from `__version__` (Excel Ranked Augs header uses the same).
 - Top bar: character filter beside status legend (BiS / Upgrade / Empty / Unknown); no row-count
@@ -320,6 +325,7 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 - `tests/test_anniversary.py` — Distant Echoes gem filter
 - `tests/test_html_export.py` — serialize farm list + EQ Resource URL payload
 - `tests/test_craft_components.py` — affix → Focus/ore mapping + ownership helpers
+- `tests/test_progress.py` — `build_export_bundle(on_progress=…)` monotonic fractions
 
 Use fixture `tests/fixtures/raidloot_dex_sample.html` (no live network in CI).
 Socket fixtures: `raidloot_item_*.html`, `eqresource_item_168096.html`.
@@ -335,7 +341,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.7`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.8`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - Icons: `Icon/Icon.png` / `Icon/report-logo-source.png` → `src/eq_augs/assets/`

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 import traceback
 import webbrowser
 from pathlib import Path
@@ -12,7 +13,7 @@ import webview
 
 from eq_augs import __version__
 from eq_augs.excel_export import write_workbook
-from eq_augs.export_bundle import build_export_bundle, default_profile_from_paths
+from eq_augs.export_bundle import build_export_bundle, default_profile_from_paths, report_progress
 from eq_augs.html_export import html_path_for_workbook, write_html
 from eq_augs.profiles import normalize_profile
 from eq_augs.roster import (
@@ -26,6 +27,8 @@ from eq_augs.roster import (
 )
 from eq_augs.web_bridge import eq_logo_data_uri
 from eq_augs.weights import default_class_weights, sanitize_weight_map
+
+_PROGRESS_WRITE = (0.95, 1.0)
 
 
 def _downloads_dir() -> Path:
@@ -222,6 +225,14 @@ class WebApi:
                     session_weights = cleaned
 
         def worker() -> None:
+            t0 = time.perf_counter()
+
+            def on_progress(payload: dict) -> None:
+                self._notify_progress(payload)
+
+            def elapsed() -> float:
+                return round(time.perf_counter() - t0, 1)
+
             try:
                 bundle = build_export_bundle(
                     paths,
@@ -230,10 +241,15 @@ class WebApi:
                     include_anniversary=include_anniversary,
                     persona_order=persona_order or None,
                     session_weights=session_weights,
+                    on_progress=on_progress,
                 )
                 if not bundle.characters:
                     self._notify_complete(
-                        {"ok": False, "error": "No inventory dumps could be parsed."}
+                        {
+                            "ok": False,
+                            "error": "No inventory dumps could be parsed.",
+                            "elapsedSeconds": elapsed(),
+                        }
                     )
                     return
 
@@ -242,19 +258,38 @@ class WebApi:
                 saved_xlsx = None
                 saved_html = None
 
+                write_steps: list[str] = []
                 if fmt in ("excel", "both"):
-                    saved_xlsx = str(write_workbook(bundle, xlsx_path))
+                    write_steps.append("excel")
                 if fmt in ("html", "both"):
-                    html_target = (
-                        html_path_for_workbook(xlsx_path)
-                        if fmt == "both"
-                        else out_dir / f"{prefix}_Slot2_Augs.html"
+                    write_steps.append("html")
+                w0, w1 = _PROGRESS_WRITE
+                n_write = len(write_steps) or 1
+
+                for i, step in enumerate(write_steps, start=1):
+                    label = (
+                        "Writing Excel…"
+                        if step == "excel"
+                        else "Writing HTML…"
                     )
-                    saved_html = str(write_html(bundle, html_target))
-                    try:
-                        webbrowser.open(Path(saved_html).resolve().as_uri())
-                    except OSError:
-                        pass
+                    report_progress(on_progress, label, w0, w1, i - 1, n_write)
+                    if step == "excel":
+                        saved_xlsx = str(write_workbook(bundle, xlsx_path))
+                    else:
+                        html_target = (
+                            html_path_for_workbook(xlsx_path)
+                            if fmt == "both"
+                            else out_dir / f"{prefix}_Slot2_Augs.html"
+                        )
+                        saved_html = str(write_html(bundle, html_target))
+                        try:
+                            webbrowser.open(Path(saved_html).resolve().as_uri())
+                        except OSError:
+                            pass
+                    report_progress(on_progress, label, w0, w1, i, n_write)
+
+                if not write_steps:
+                    report_progress(on_progress, "Done", w0, w1, 1, 1)
 
                 self._notify_complete(
                     {
@@ -264,6 +299,7 @@ class WebApi:
                         "warnings": bundle.warnings,
                         "characterCount": len(bundle.characters),
                         "fromCache": bundle.catalog.from_cache,
+                        "elapsedSeconds": elapsed(),
                     }
                 )
             except Exception as exc:
@@ -272,6 +308,7 @@ class WebApi:
                         "ok": False,
                         "error": str(exc),
                         "traceback": traceback.format_exc(),
+                        "elapsedSeconds": elapsed(),
                     }
                 )
 
@@ -282,6 +319,17 @@ class WebApi:
         profile = default_profile_from_paths(paths)
         self._profile = profile
         return {"profile": profile}
+
+    def _notify_progress(self, payload: dict) -> None:
+        window = self._window
+        if window is None:
+            return
+        try:
+            window.evaluate_js(
+                f"window.onGenerateProgress && window.onGenerateProgress({json.dumps(payload)})"
+            )
+        except Exception:
+            pass
 
     def _notify_complete(self, result: dict) -> None:
         window = self._window

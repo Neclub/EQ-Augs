@@ -247,7 +247,12 @@
   </div>
 
   <div class="action-bar">
-    <div class="status" id="status">Ready • No files loaded</div>
+    <div class="action-bar-status">
+      <div class="status" id="status">Ready • No files loaded</div>
+      <div class="gen-progress hidden" id="genProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-hidden="true">
+        <div class="gen-progress-bar" id="genProgressBar"></div>
+      </div>
+    </div>
     <div class="action-bar-right">
       <div class="chip-row output-format" id="outputFormatChips" role="group" aria-label="Output format">
         <button type="button" class="chip" id="chipFormatExcel" data-format="excel">Excel</button>
