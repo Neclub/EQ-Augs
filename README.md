@@ -39,6 +39,7 @@ py -m pytest
 py scripts/prepare_app_icon.py
 py scripts/prepare_report_logo.py
 py scripts/prepare_readme_banner.py
+py scripts/capture_gui_screenshot.py
 build_exe.bat
 py scripts/print_weights_doc.py
 ```
