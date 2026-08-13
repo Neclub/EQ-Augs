@@ -1,5 +1,9 @@
 # EQ Augs
 
+<p align="center">
+  <img src="docs/images/eq-augs-banner.jpg" alt="EQ Augs — EverQuest Companion" width="720">
+</p>
+
 Figure out which Slot2 type 7/8 augs you’re missing — and which ones you already own.
 
 EQ Augs reads your EverQuest inventory dumps, compares equipped type 7/8 augs against live [raidloot.com](https://www.raidloot.com) rankings, and builds a report of upgrades, bag/bank ownership, and a **Need to farm** list. Charm, Range, and Feet (for high-AC classes) get special attention so priority holes show up first.
