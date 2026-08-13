@@ -208,7 +208,7 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
 
     # --- Sheet 3: Need to Farm ---
     ws_farm = wb.create_sheet("Need to Farm")
-    farm_headers = ["Character", "Slot", "Aug", "ID", "Expansion"]
+    farm_headers = ["Character", "Slot", "Aug", "Expansion"]
     for col, h in enumerate(farm_headers, start=1):
         cell = ws_farm.cell(1, col, h)
         cell.fill = HEADER_FILL
@@ -227,14 +227,13 @@ def write_workbook(bundle: ExportBundle, output_path: Path) -> Path:
         if entry.craft_component_owned and entry.craft_component_name:
             aug_label = f"{entry.name}  [Have {entry.craft_component_name}]"
         _set_item_cell(ws_farm.cell(farm_row, 3), aug_label, entry.item_id, on_fill=False)
-        ws_farm.cell(farm_row, 4, entry.item_id)
-        ws_farm.cell(farm_row, 5, entry.expansion or "")
+        ws_farm.cell(farm_row, 4, entry.expansion or "")
         farm_row += 1
 
     if farm_row == 2:
         ws_farm.cell(2, 1, "No recommended upgrades to farm.")
 
-    for i, w in enumerate([18, 12, 52, 10, 22], start=1):
+    for i, w in enumerate([18, 12, 52, 22], start=1):
         ws_farm.column_dimensions[get_column_letter(i)].width = w
 
     # --- Sheet 4: Ranked reference ---

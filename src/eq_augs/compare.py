@@ -708,12 +708,6 @@ def _finalize_comparison(
     cur_aug = _lookup_current_aug(
         catalog, current.item_id, external_augs=external_augs
     )
-    stats_from_eqr = (
-        cur_aug is not None
-        and current.item_id is not None
-        and not any(a.item_id == current.item_id for a in catalog)
-        and (cur_aug.source or "").casefold().startswith("eq resource")
-    )
 
     if (
         status == "upgrade"
@@ -743,7 +737,6 @@ def _finalize_comparison(
             note = "Current is better than remaining missing BiS options"
             recommended = cur_aug
             move_from_slot = None
-            stats_from_eqr = False
 
     # Lead note with Focus/AC/HP gain when an upgrade is recommended.
     if status in ("upgrade", "empty") and recommended is not None:
@@ -773,13 +766,7 @@ def _finalize_comparison(
         move_txt = "; ".join(move_bits)
         note = f"{move_txt}; {note}" if note else move_txt
 
-    if stats_from_eqr and status in ("upgrade", "empty", "bis"):
-        eqr_bit = "stats via EQ Resource"
-        note = f"{note}; {eqr_bit}" if note else eqr_bit
-
     extras: list[str] = []
-    if recommended is not None and recommended.lore:
-        extras.append("Lore — unique equip")
     if recommended is not None and recommended.shield_only:
         extras.append("Shield Only Secondary aug")
     if (
@@ -797,9 +784,6 @@ def _finalize_comparison(
     if current.dump_slot == 4 and current.gear_slot == "Range":
         bow_note = "Range Slot1–4 + name has bow → type 7/8 in Slot4"
         note = f"{note}; {bow_note}" if note else bow_note
-    elif current.socket_map_hit and current.dump_slot != 2:
-        slot_note = f"type 7/8 in Slot{current.dump_slot}"
-        note = f"{note}; {slot_note}" if note else slot_note
     elif (
         not current.socket_map_hit
         and current.parent_id

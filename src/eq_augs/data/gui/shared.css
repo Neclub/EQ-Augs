@@ -63,9 +63,11 @@ body {
 }
 
 .header-brand img {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
 }
 
 .header-brand h1 {

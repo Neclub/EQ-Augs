@@ -77,8 +77,8 @@ a:hover { text-decoration: underline; }
   flex: 1;
 }
 .topbar-logo {
-  width: 96px;
-  height: 96px;
+  width: 132px;
+  height: 132px;
   object-fit: contain;
   flex-shrink: 0;
   border-radius: 0;
@@ -118,6 +118,12 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   color: var(--muted);
   font-size: 12.5px;
+}
+.topbar-controls .filters label {
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 .filters select {
   background: var(--panel);
@@ -352,7 +358,7 @@ tbody tr.status-unknown {
 @media (max-width: 720px) {
   .topbar, .page { padding-left: 14px; padding-right: 14px; }
   .topbar h1 { font-size: 18px; }
-  .topbar-logo { width: 72px; height: 72px; }
+  .topbar-logo { width: 96px; height: 96px; }
   th, td { padding: 8px 9px; }
 }
 </style>
@@ -373,7 +379,7 @@ tbody tr.status-unknown {
         </div>
       </div>
     </div>
-    <img class="topbar-logo" id="reportLogo" alt="EQ Augs" width="96" height="96">
+    <img class="topbar-logo" id="reportLogo" alt="EQ Augs" width="132" height="132">
   </div>
 </header>
 
@@ -687,7 +693,7 @@ function renderFarm() {
     return;
   }
 
-  const head = "<th>Character</th><th>Slot</th><th>Aug</th><th>ID</th><th>Expansion</th>";
+  const head = "<th>Character</th><th>Slot</th><th>Aug</th><th>Expansion</th>";
   let body = "";
   rows.forEach(f => {
     const aug = itemLink(f.name, f.itemId) +
@@ -696,7 +702,6 @@ function renderFarm() {
       `<td>${esc(f.character)}</td>` +
       `<td>${esc(f.gearSlot)}</td>` +
       `<td>${aug}</td>` +
-      `<td class="num muted-cell">${f.itemId}</td>` +
       `<td>${esc(f.expansion || "")}</td>` +
       "</tr>";
   });

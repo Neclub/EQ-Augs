@@ -3,7 +3,7 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.6`
+**Standalone version:** `0.3.7`
 
 ## Purpose of this app
 
@@ -210,7 +210,7 @@ Recommendations treat the character's equipped type 7/8 augs **as a set**:
 7. If current aug is missing from the raidloot catalog, look up stats on
    **EQ Resource** (`items.eqresource.com`) for Focus/AC/HP comparison
    (cached under `%LOCALAPPDATA%\EQ Augs\eqresource_aug_cache.json`).
-   Notes include `stats via EQ Resource` when that fallback is used.
+   Notes no longer append `stats via EQ Resource` when that fallback is used.
    Still `unknown` only when EQ Resource also misses.
 
 Upgrade reports list all graded slots (`upgrade` / `empty` / `unknown` / `bis`).
@@ -335,7 +335,7 @@ Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.6`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.7`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - Icons: `Icon/Icon.png` / `Icon/report-logo-source.png` → `src/eq_augs/assets/`

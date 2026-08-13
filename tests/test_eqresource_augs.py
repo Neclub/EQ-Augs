@@ -93,7 +93,7 @@ def test_unknown_aug_compared_via_eqresource():
     arms = next(c for c in report.comparisons if c.gear_slot == "Arms")
     assert arms.status == "upgrade"
     assert arms.recommended_id == 175572
-    assert "stats via EQ Resource" in arms.note
+    assert "stats via EQ Resource" not in arms.note
     # 61 HDex - 0 from Phantasmal on dex profile
     assert "+61 HDex" in arms.note
     assert "not in raidloot catalog" not in arms.note
