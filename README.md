@@ -1,7 +1,7 @@
 # EQ Augs
 
 <p align="center">
-  <img src="docs/images/eq-augs-banner.jpg" alt="EQ Augs — EverQuest Companion" width="720">
+  <img src="docs/images/eq-augs-banner.jpg" alt="EQ Augs" width="720">
 </p>
 
 Figure out which Slot2 type 7/8 augs you’re missing — and which ones you already own.
@@ -38,6 +38,7 @@ py -m pip install -e ".[dev]"
 py -m pytest
 py scripts/prepare_app_icon.py
 py scripts/prepare_report_logo.py
+py scripts/prepare_readme_banner.py
 build_exe.bat
 py scripts/print_weights_doc.py
 ```
