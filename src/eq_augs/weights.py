@@ -303,26 +303,6 @@ def score_aug(aug: AugCandidate, weights: Mapping[str, float]) -> float:
     return total
 
 
-def score_delta_contributors(
-    current: AugCandidate | None,
-    recommended: AugCandidate,
-    weights: Mapping[str, float],
-    *,
-    top_n: int = 3,
-) -> list[tuple[str, float]]:
-    """Return top weighted delta contributors (display_label, weighted_delta)."""
-    cur = current.effective_stats() if current is not None else {}
-    rec = recommended.effective_stats()
-    parts: list[tuple[str, float]] = []
-    for key, weight in weights.items():
-        d = (float(rec.get(key, 0)) - float(cur.get(key, 0))) * float(weight)
-        if abs(d) < 1e-9:
-            continue
-        parts.append((STAT_DISPLAY.get(key, key), d))
-    parts.sort(key=lambda x: (-abs(x[1]), x[0]))
-    return parts[:top_n]
-
-
 def rank_key(
     aug: AugCandidate,
     class_abbr: str | None,

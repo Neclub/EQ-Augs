@@ -77,7 +77,7 @@ def main() -> None:
     out.append("Simplified focus stats:")
     out.append("  tank:        AC (10) > HDex (8)")
     out.append("  priest:      HWis (10)")
-    out.append("  pure_caster: Spell Damage (10) > HInt (8)")
+    out.append("  pure_caster: Spell Damage (10) > HInt/HWis/HDex (1)")
     out.append("  melee_dps / hybrid_dps: HDex (10)")
     out.append("")
 

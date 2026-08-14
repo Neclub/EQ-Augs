@@ -73,9 +73,12 @@ function syncOutputFormatChips() {
 function createCharCard(entry, { showServer } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "char-card-inner";
-  const cls = entry.classAbbr
-    ? `<span class="class-badge">${escapeHtml(entry.classAbbr)}</span>`
-    : "";
+  const abbrs = Array.isArray(entry.classAbbrs) && entry.classAbbrs.length
+    ? entry.classAbbrs
+    : (entry.classAbbr ? [entry.classAbbr] : []);
+  const cls = abbrs
+    .map((a) => `<span class="class-badge">${escapeHtml(a)}</span>`)
+    .join("");
   const serverLine =
     showServer && entry.server
       ? `<div class="char-server">${escapeHtml(entry.server)}</div>`
@@ -339,7 +342,9 @@ function showFolderPicker(data) {
         <h2>Characters in folder</h2>
         <div class="path">${escapeHtml(data.folder)}</div>
         <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">
-          Choose which characters to add. You can add from multiple folders or servers.
+          Choose which characters to add. Class-tagged dumps
+          (<code>Name_server-CLASS-Inventory.txt</code>) are grouped on one row
+          and added as separate roster columns.
         </p>
       </div>
       <div class="modal-body">
@@ -419,8 +424,8 @@ async function addPaths(paths) {
       added += 1;
     }
   }
-  if (!added) {
-    showToast("Those characters are already in the list.");
+  if (!paths.length) {
+    showToast("Select at least one character.", true);
     return;
   }
   state.filePaths.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
@@ -430,7 +435,11 @@ async function addPaths(paths) {
     if (inferred && inferred.profile) state.profile = inferred.profile;
   } catch (_) {}
   refreshUI();
-  showToast(`Added ${added} character${added === 1 ? "" : "s"}`);
+  if (!added) {
+    showToast("Updated characters from folder.");
+  } else {
+    showToast(`Added ${added} character${added === 1 ? "" : "s"}`);
+  }
 }
 
 async function rebuildRoster() {
@@ -439,6 +448,7 @@ async function rebuildRoster() {
     return;
   }
   state.roster = await api("build_roster", state.filePaths);
+  state.filePaths = state.roster.map((e) => e.path);
   // Keep selected indices valid
   const max = state.roster.length;
   state.selectedRoster = new Set([...state.selectedRoster].filter((i) => i >= 0 && i < max));

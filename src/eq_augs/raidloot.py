@@ -7,7 +7,7 @@ import os
 import re
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -138,9 +138,14 @@ class AugCandidate:
     allowed_bases: frozenset[str] = field(default_factory=frozenset)
     ear_only: bool = False
     lore: bool = False
+    lore_group: str | None = None
     shield_only: bool = False
     source: str = ""
     stats: dict[str, int] = field(default_factory=dict)
+
+    def lore_group_key(self) -> str:
+        """Casefolded lore-group id/name, or empty when the aug is not grouped."""
+        return (self.lore_group or "").strip().casefold()
 
     def fits_gear_slot(self, gear_slot: str) -> bool:
         base = _gear_slot_base(gear_slot)
@@ -167,6 +172,33 @@ class AugCandidate:
         if self.focus_heroic and focus_key and focus_key not in base:
             base[focus_key] = self.focus_heroic
         return base
+
+
+def unique_by_lore_group(augs: list[AugCandidate]) -> list[AugCandidate]:
+    """Keep the first aug of each lore group (caller should sort best-first).
+
+    Ungrouped augs are kept unless their item id is the canonical id of a
+    group already chosen.
+    """
+    seen_groups: set[str] = set()
+    seen_ids: set[int] = set()
+    out: list[AugCandidate] = []
+    for aug in augs:
+        if aug.item_id in seen_ids:
+            continue
+        key = aug.lore_group_key()
+        if key and key in seen_groups:
+            continue
+        if str(aug.item_id) in seen_groups:
+            continue
+        out.append(aug)
+        seen_ids.add(aug.item_id)
+        seen_groups.add(str(aug.item_id))
+        if key:
+            seen_groups.add(key)
+            if key.isdigit():
+                seen_ids.add(int(key))
+    return out
 
 
 @dataclass
@@ -346,7 +378,11 @@ def _parse_stats_from_detail(detail: str) -> dict[str, int]:
         ("Stun Resist", "stun_resist"),
         ("Strike Through", "strikethrough"),
         ("Heal Amount", "heal_amount"),
+        ("Heal Amt", "heal_amount"),
         ("Spell Damage", "spell_damage"),
+        ("Spell Dmg", "spell_damage"),
+        ("SpellDmg", "spell_damage"),
+        ("Nuke", "spell_damage"),
         ("Clairvoyance", "clairvoyance"),
         ("Attack", "atk"),
         ("ATK", "atk"),
@@ -410,6 +446,41 @@ def _html_to_text(fragment: str) -> str:
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+
+def _normalize_lore_group_value(raw: str) -> str | None:
+    text = re.sub(r"\s+", " ", (raw or "").strip())
+    if not text:
+        return None
+    m = re.match(r"^(\d+)\b", text)
+    if m:
+        return m.group(1)
+    return text
+
+
+def parse_raidloot_lore_group(detail: str) -> str | None:
+    """Lore-group key from a raidloot detail block (usually a canonical item id)."""
+    if not detail:
+        return None
+    for label in ("Lore Equipped Group", "Lore Group"):
+        labeled = _label_after(detail, label)
+        if labeled:
+            return _normalize_lore_group_value(labeled)
+    plain = _html_to_text(detail)
+    m = re.search(
+        r"Lore Equipped Group:\s*(.+?)(?=(?:Slot:|AC:|HP:|Restrictions:|Required|Class:|Tools:|$))",
+        plain,
+        re.IGNORECASE,
+    )
+    if not m:
+        m = re.search(
+            r"Lore Group:\s*(.+?)(?=(?:Slot:|AC:|HP:|Restrictions:|Required|Class:|Tools:|$))",
+            plain,
+            re.IGNORECASE,
+        )
+    if m:
+        return _normalize_lore_group_value(m.group(1))
+    return None
 
 
 def _label_after(html_fragment: str, label: str) -> str:
@@ -556,6 +627,7 @@ def _parse_aug_block(
         allowed_bases=allowed,
         ear_only=ear_only,
         lore=lore,
+        lore_group=parse_raidloot_lore_group(detail),
         shield_only=shield_only,
         source=source,
         stats=clean_stats(stats),
@@ -754,6 +826,7 @@ def _candidate_from_dict(d: dict, profile: ProfileId) -> AugCandidate:
         allowed_bases=frozenset(d.get("allowed_bases", [])),
         ear_only=bool(d.get("ear_only", False)),
         lore=bool(d.get("lore", False)),
+        lore_group=(str(d["lore_group"]).strip() if d.get("lore_group") else None) or None,
         shield_only=bool(d.get("shield_only", False)),
         source=d.get("source", ""),
         stats=stats,
@@ -773,6 +846,7 @@ def _candidate_to_dict(a: AugCandidate) -> dict:
         "allowed_bases": sorted(a.allowed_bases),
         "ear_only": a.ear_only,
         "lore": a.lore,
+        "lore_group": a.lore_group,
         "shield_only": a.shield_only,
         "source": a.source,
         "stats": dict(a.stats or a.effective_stats()),
@@ -790,21 +864,13 @@ def _retag_profile(augs: list[AugCandidate], profile: ProfileId) -> list[AugCand
         stats = dict(a.stats or a.effective_stats())
         focus, ac, hp, atk = legacy_from_stats(stats, profile)
         out.append(
-            AugCandidate(
-                item_id=a.item_id,
-                name=a.name,
+            replace(
+                a,
                 profile=profile,
                 focus_heroic=focus or a.focus_heroic,
                 ac=ac or a.ac,
                 hp=hp or a.hp,
                 atk=atk or a.atk,
-                slot_text=a.slot_text,
-                excluded_bases=a.excluded_bases,
-                allowed_bases=a.allowed_bases,
-                ear_only=a.ear_only,
-                lore=a.lore,
-                shield_only=a.shield_only,
-                source=a.source,
                 stats=stats,
             )
         )
@@ -827,10 +893,8 @@ def merge_shield_augs(
                 if existing.item_id == aug.item_id and not existing.shield_only:
                     stats = merge_stats(existing.effective_stats(), aug.effective_stats())
                     focus, ac, hp, atk = legacy_from_stats(stats, existing.profile)
-                    merged[i] = AugCandidate(
-                        item_id=existing.item_id,
-                        name=existing.name,
-                        profile=existing.profile,
+                    merged[i] = replace(
+                        existing,
                         focus_heroic=focus or existing.focus_heroic,
                         ac=ac or existing.ac or aug.ac,
                         hp=hp or existing.hp or aug.hp,
@@ -840,6 +904,7 @@ def merge_shield_augs(
                         allowed_bases=frozenset({"Secondary"}),
                         ear_only=False,
                         lore=existing.lore or aug.lore,
+                        lore_group=existing.lore_group or aug.lore_group,
                         shield_only=True,
                         source=existing.source or aug.source,
                         stats=stats,
@@ -864,11 +929,12 @@ def fetch_catalog(
     shield_html_override: str | None = None,
 ) -> CatalogResult:
     """
-    Fetch (or load cached) raidloot catalog for a profile.
+    Fetch the type 7/8 catalog: EQ Resource advanced search first, raidloot fallback.
 
-    Also merges Shield Only Secondary augs from the Aug_Shield list.
+    Also merges Shield Only Secondary augs from the raidloot Aug_Shield list.
 
-    ``html_override`` / ``shield_html_override`` are for tests — skip network.
+    ``html_override`` / ``shield_html_override`` are for tests — skip network
+    and parse raidloot HTML directly.
     """
     info = profile_info(profile)
     now = datetime.now(timezone.utc).isoformat()
@@ -890,36 +956,57 @@ def fetch_catalog(
     augs: list[AugCandidate] = []
     from_cache = False
     fetched_at = now
+    catalog_url = info.url
 
-    if not force_refresh:
-        pass  # always try live first per plan; fall back to cache on failure
-
+    eqr_ok = False
     try:
-        html = _http_get(info.url)
-        augs = parse_raidloot_html(html, profile)
-        usable = [a for a in augs if a.item_id != ARTISANS_PRIZE_ID]
+        from eq_augs.eqresource_search import fetch_eqresource_catalog
+
+        eqr = fetch_eqresource_catalog(profile, force_refresh=force_refresh)
+        usable = [a for a in eqr.augs if a.item_id != ARTISANS_PRIZE_ID]
         if len(usable) < 3:
             raise ValueError(
-                f"Parsed only {len(usable)} usable augs from raidloot HTML "
-                f"(need a working detail-block parse)"
+                f"EQ Resource catalog parsed only {len(usable)} usable augs"
             )
-        cache[profile] = {
-            "fetched_at": now,
-            "url": info.url,
-            "augs": [_candidate_to_dict(a) for a in augs],
-        }
-        _save_cache(cache)
+        augs = eqr.augs
+        eqr_ok = True
+        catalog_url = eqr.url or catalog_url
+        from_cache = eqr.from_cache
+        fetched_at = eqr.fetched_at or now
+        if eqr.warning:
+            warning = eqr.warning
     except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
-        cached = cache.get(profile)
-        if cached and cached.get("augs"):
-            augs = [_candidate_from_dict(d, profile) for d in cached["augs"]]
-            from_cache = True
-            fetched_at = cached.get("fetched_at", "")
-            warning = f"Live raidloot fetch failed ({exc}); using cached catalog."
-        else:
-            # Still provide Artisan's Prize stub so Ear logic works.
-            augs = [_prize_aug(profile)]
-            warning = f"Live raidloot fetch failed ({exc}); no cache available."
+        warning = f"EQ Resource catalog failed ({exc}); trying raidloot."
+
+    if not eqr_ok:
+        try:
+            html = _http_get(info.url)
+            augs = parse_raidloot_html(html, profile)
+            usable = [a for a in augs if a.item_id != ARTISANS_PRIZE_ID]
+            if len(usable) < 3:
+                raise ValueError(
+                    f"Parsed only {len(usable)} usable augs from raidloot HTML "
+                    f"(need a working detail-block parse)"
+                )
+            cache[profile] = {
+                "fetched_at": now,
+                "url": info.url,
+                "augs": [_candidate_to_dict(a) for a in augs],
+            }
+            _save_cache(cache)
+            catalog_url = info.url
+        except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
+            cached = cache.get(profile)
+            if cached and cached.get("augs"):
+                augs = [_candidate_from_dict(d, profile) for d in cached["augs"]]
+                from_cache = True
+                fetched_at = cached.get("fetched_at", "")
+                raid_warn = f"Live raidloot fetch failed ({exc}); using cached catalog."
+                warning = f"{warning} {raid_warn}" if warning else raid_warn
+            else:
+                augs = [_prize_aug(profile)]
+                raid_warn = f"Live raidloot fetch failed ({exc}); no cache available."
+                warning = f"{warning} {raid_warn}" if warning else raid_warn
 
     # Merge Shield Only Secondary augs (separate raidloot list).
     shield_augs: list[AugCandidate] = []
@@ -956,7 +1043,7 @@ def fetch_catalog(
         fetched_at=fetched_at,
         from_cache=from_cache,
         warning=warning,
-        url=info.url,
+        url=catalog_url,
     )
 
 

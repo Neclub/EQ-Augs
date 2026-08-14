@@ -6,17 +6,17 @@
 
 Figure out which Slot2 type 7/8 augs you’re missing — and which ones you already own.
 
-EQ Augs reads your EverQuest inventory dumps, compares equipped type 7/8 augs against live [raidloot.com](https://www.raidloot.com) rankings, and builds a report of upgrades, bag/bank ownership, and a **Need to farm** list. Charm, Range, and Feet (for high-AC classes) get special attention so priority holes show up first.
+EQ Augs reads your EverQuest inventory dumps, compares equipped type 7/8 augs against live [EQ Resource](https://items.eqresource.com/itemsearch.php?s=advanced) catalogs ([raidloot.com](https://www.raidloot.com) if that search fails), and builds a report of upgrades, bag/bank ownership, and a **Need to farm** list. Charm, Range, and Feet (for high-AC classes) get special attention so priority holes show up first. Lore-group gems (for example Defender’s and Mystic’s Gem of Unraveling Order) are treated as unique — only one member of a group is recommended or listed to farm.
 
-**Version:** 0.3.8  
-**Current build:** [EQAugs-0.3.8.exe](https://github.com/Neclub/EQ-Augs/releases/latest/download/EQAugs-0.3.8.exe)
+**Version:** 0.4.0  
+**Current build:** [EQAugs-0.4.0.exe](https://github.com/Neclub/EQ-Augs/releases/latest/download/EQAugs-0.4.0.exe)
 ([all releases](https://github.com/Neclub/EQ-Augs/releases/latest))
 
 ![EQ Augs setup window](docs/images/gui-setup.png)
 
 ## How to use it
 
-1. **Download** the current build above and run `EQAugs-0.3.8.exe` (no install needed).
+1. **Download** the current build above and run `EQAugs-0.4.0.exe` (no install needed).
 2. Click **EQ Folder** and choose the folder with your `*-Inventory.txt` dumps (or drop the files into the Characters list).
 3. Optionally set **Aug options** — Artisan’s Prize ownership, anniversary gems, etc.
 4. Pick an **Output folder** and format (Excel, HTML, or both).
@@ -27,7 +27,8 @@ The report shows what you have equipped vs what’s recommended, marks pieces yo
 ### Tips
 
 - Leave **Include Anniversary augs** off unless you want Gems of Distant Echoes in the recommendations.
-- Scoring defaults are role-focused: tanks **AC + HDex**, melee/hybrids **HDex**, casters **Spell Damage + HInt**, priests **HWis**.
+- Scoring defaults are role-focused: tanks **AC + HDex**, melee/hybrids **HDex**, casters **Spell Damage** (with small HInt/HWis/HDex tie-breakers), priests **HWis**. Upgrade notes show score plus Spell Damage / heroic / AC / HP gains.
+- Folder pickers keep class-tagged dumps (`Name_server-CLASS-Inventory.txt`) as separate personas when the same character has more than one class.
 - **Advanced weights** (single character only) lets you tweak scoring for one generate; leave **Use weight overrides** unchecked to stick with class defaults.
 
 ## For developers
@@ -44,7 +45,7 @@ build_exe.bat
 py scripts/print_weights_doc.py
 ```
 
-Local build output: `dist\EQAugs-0.3.8.exe`
+Local build output: `dist\EQAugs-0.4.0.exe`
 
 App / window icons come from `Icon/Icon.png` → `src/eq_augs/assets/eq-icon.{png,ico}`.  
 HTML report header logo comes from `Icon/report-logo-source.png` → `src/eq_augs/assets/eq-report-logo.png`.

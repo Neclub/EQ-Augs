@@ -44,7 +44,12 @@ def test_simplified_role_focus_stats():
     assert resolve_weights("ROG", "Head") == {"hdex": 10.0}
     assert resolve_weights("RNG", "Head") == {"hdex": 10.0}
     assert resolve_weights("CLR", "Head") == {"hwis": 10.0}
-    assert resolve_weights("WIZ", "Head") == {"spell_damage": 10.0, "hint": 8.0}
+    assert resolve_weights("WIZ", "Head") == {
+        "spell_damage": 10.0,
+        "hint": 1.0,
+        "hwis": 1.0,
+        "hdex": 1.0,
+    }
 
 
 def test_feet_overlay_war_not_rog():
@@ -133,6 +138,70 @@ def test_feet_small_ac_edge_beats_focus_for_war():
         [more_focus, more_ac], key=lambda a: rank_key(a, "WAR", "Feet")
     )
     assert order[0].item_id == 2
+
+
+def test_wiz_prefers_spell_damage_over_hint():
+    more_hint = _aug(
+        item_id=1,
+        name="HInt Gem",
+        profile="int",
+        focus_heroic=60,
+        stats={"hint": 60, "spell_damage": 80, "ac": 100, "hp": 1000},
+    )
+    more_sd = _aug(
+        item_id=2,
+        name="Nuke Gem",
+        profile="int",
+        focus_heroic=40,
+        stats={"hint": 40, "spell_damage": 120, "ac": 100, "hp": 1000},
+    )
+    order = sorted(
+        [more_hint, more_sd], key=lambda a: rank_key(a, "WIZ", "Head")
+    )
+    assert order[0].item_id == 2
+
+
+def test_wiz_prefers_high_spell_damage_dex_aug():
+    """Spell Damage dominates; a Dex aug with more SD beats a higher-HInt INT aug."""
+    int_aug = _aug(
+        item_id=1,
+        name="HInt Gem",
+        profile="int",
+        focus_heroic=61,
+        stats={"hint": 61, "spell_damage": 100, "ac": 100, "hp": 1500},
+    )
+    dex_aug = _aug(
+        item_id=2,
+        name="Dex SD Gem",
+        profile="dex",
+        focus_heroic=61,
+        stats={"hdex": 61, "spell_damage": 114, "ac": 115, "hp": 1750},
+    )
+    order = sorted(
+        [int_aug, dex_aug], key=lambda a: rank_key(a, "WIZ", "Head")
+    )
+    assert order[0].item_id == 2
+
+
+def test_wiz_falls_back_to_hint_when_spell_damage_missing():
+    more_hint = _aug(
+        item_id=1,
+        name="HInt Gem",
+        profile="int",
+        focus_heroic=60,
+        stats={"hint": 60, "ac": 100, "hp": 1000},
+    )
+    less_hint = _aug(
+        item_id=2,
+        name="Low HInt Gem",
+        profile="int",
+        focus_heroic=40,
+        stats={"hint": 40, "ac": 100, "hp": 1000},
+    )
+    order = sorted(
+        [more_hint, less_hint], key=lambda a: rank_key(a, "WIZ", "Head")
+    )
+    assert order[0].item_id == 1
 
 
 def test_shield_overlay_requires_flag():

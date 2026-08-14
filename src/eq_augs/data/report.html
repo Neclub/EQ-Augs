@@ -535,8 +535,10 @@ function flash(el) {
   void el.offsetWidth;
   el.classList.add("fade");
 }
-function tableHtml(head, bodyRows) {
-  return `<div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+function tableHtml(head, bodyRows, { scroll = true } = {}) {
+  const table = `<table><thead><tr>${head}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+  if (!scroll) return table;
+  return `<div class="table-scroll">${table}</div>`;
 }
 function renderTitle() {
   if (!REPORT) return;
@@ -658,7 +660,7 @@ function renderUpgrades() {
       `<td class="muted-cell">${esc(u.note || "")}</td>` +
       "</tr>";
   });
-  wrap.innerHTML = tableHtml(head, body);
+  wrap.innerHTML = tableHtml(head, body, { scroll: false });
   flash(wrap);
 }
 function renderFarm() {

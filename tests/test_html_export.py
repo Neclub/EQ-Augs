@@ -358,3 +358,43 @@ def test_build_farm_list_carries_craft_component_owned():
     assert len(farm) == 1
     assert farm[0].craft_component_owned is True
     assert farm[0].craft_component_name == "Unraveling Focus of Fortitude"
+
+
+def test_build_farm_list_one_per_lore_group():
+    from eq_augs.compare import CharacterSlot2Report, Slot2Comparison
+    from eq_augs.export_bundle import build_farm_list
+
+    mystic = Slot2Comparison(
+        gear_slot="Head",
+        current_name=None,
+        current_id=None,
+        recommended_name="Mystic's Gem of Unraveling Order",
+        recommended_id=175573,
+        recommended_focus=61,
+        status="empty",
+        recommended_owned=False,
+    )
+    defender = Slot2Comparison(
+        gear_slot="Arms",
+        current_name=None,
+        current_id=None,
+        recommended_name="Defender's Gem of Unraveling Order",
+        recommended_id=175571,
+        recommended_focus=0,
+        status="empty",
+        recommended_owned=False,
+    )
+    ch = CharacterSlot2Report(
+        character="X",
+        server="s",
+        class_abbr="WIZ",
+        profile="int",
+        filepath="x",
+        comparisons=[mystic, defender],
+    )
+    farm = build_farm_list(
+        [ch],
+        [],
+        lore_group_by_id={175573: "175571", 175571: "175571"},
+    )
+    assert [e.item_id for e in farm] == [175573]

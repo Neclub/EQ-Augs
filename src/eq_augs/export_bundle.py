@@ -25,7 +25,7 @@ from eq_augs.parser import (
     parse_inventory_file,
 )
 from eq_augs.profiles import PROFILE_LABELS, ProfileId, normalize_profile, profile_for_class
-from eq_augs.raidloot import AugCandidate, CatalogResult, fetch_catalog
+from eq_augs.raidloot import AugCandidate, CatalogResult, fetch_catalog, unique_by_lore_group
 from eq_augs.roster import RosterEntry, build_roster, export_prefix_from_roster, persona_key
 
 ProgressFn = Callable[[dict], None]
@@ -107,8 +107,12 @@ class ExportBundle:
 def build_farm_list(
     characters: list[CharacterSlot2Report],
     roster: list[RosterEntry],
+    *,
+    lore_group_by_id: dict[int, str] | None = None,
 ) -> list[FarmListEntry]:
     """Recommended upgrades not present anywhere in that character's inventory."""
+    lore_group_by_id = lore_group_by_id or {}
+    seen_group_by_persona: dict[str, set[str]] = {}
     entries: list[FarmListEntry] = []
     for i, ch in enumerate(characters):
         pk = (
@@ -123,6 +127,12 @@ def build_farm_list(
                 continue
             if cmp_.recommended_owned:
                 continue
+            group = (lore_group_by_id.get(cmp_.recommended_id) or "").strip().casefold()
+            if group:
+                seen = seen_group_by_persona.setdefault(pk, set())
+                if group in seen:
+                    continue
+                seen.add(group)
             entries.append(
                 FarmListEntry(
                     character=ch.character,
@@ -450,7 +460,7 @@ def build_export_bundle(
             scored.sort(
                 key=lambda a: rank_key(a, rep_class, "Head", profile=pid)
             )
-            ranked.extend(scored[:50])
+            ranked.extend(unique_by_lore_group(scored)[:50])
 
     distinct_servers = {s for s in servers if s}
     server = ""
@@ -461,7 +471,15 @@ def build_export_bundle(
 
     prefix = export_prefix_from_roster(roster) if roster else (server or "Team")
     show_server = len(distinct_servers) > 1
-    farm_list = build_farm_list(characters, roster)
+    lore_group_by_id: dict[int, str] = {}
+    for cat in catalogs.values():
+        for aug in cat.augs:
+            key = aug.lore_group_key()
+            if key:
+                lore_group_by_id[aug.item_id] = key
+    farm_list = build_farm_list(
+        characters, roster, lore_group_by_id=lore_group_by_id
+    )
 
     return ExportBundle(
         profile=primary_profile,

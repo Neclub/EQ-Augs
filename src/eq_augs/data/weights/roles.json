@@ -10,7 +10,9 @@
     },
     "pure_caster": {
       "spell_damage": 10.0,
-      "hint": 8.0
+      "hint": 1.0,
+      "hwis": 1.0,
+      "hdex": 1.0
     },
     "melee_dps": {
       "hdex": 10.0

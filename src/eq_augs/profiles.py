@@ -35,7 +35,24 @@ SHIELD_AUG_URL = (
     "https://www.raidloot.com/items?type=Aug_Shield&augslot=7%2C8&order=AC"
 )
 
-# Raidloot filter URLs (Dex / INT / WIS type 7/8 catalogs)
+# EQ Resource advanced search (type 7/8 augs). POST to dosearch.php.
+# https://items.eqresource.com/itemsearch.php?s=advanced
+EQRESOURCE_SEARCH_URL = "https://items.eqresource.com/dosearch.php"
+
+# Primary filter per profile (mirrors raidloot floors). Extra columns always
+# include Spell Damage / HInt / HDex / HWis so the result table is comparable.
+EQRESOURCE_SEARCH_PRIMARY: dict[ProfileId, tuple[str, str, str]] = {
+    "dex": ("hdex", "greater", "30"),
+    "int": ("spelldamage", "greater", "80"),
+    "wis": ("hwis", "greater", "35"),
+}
+EQRESOURCE_SEARCH_COLUMNS: tuple[str, ...] = (
+    "spelldamage",
+    "hintel",
+    "hdex",
+    "hwis",
+)
+# Raidloot filter URLs (Dex / INT / WIS type 7/8 catalogs); used as fallback.
 RAIDLOOT_URLS: dict[ProfileId, str] = {
     "dex": (
         "https://www.raidloot.com/items/augs?augslot=7%2C8&level=&source="
@@ -44,8 +61,8 @@ RAIDLOOT_URLS: dict[ProfileId, str] = {
     ),
     "int": (
         "https://www.raidloot.com/items/augs?augslot=7%2C8&level=&source="
-        "&AC=0&HP=0&Mana=0&End=0&ATK=0&HSta=0&HStr=0&HDex=&HAgi=0&HWis=0"
-        "&HInt=35&HCha=0&Clrv=0&Heal=0&Nuke=0"
+        "&AC=0&HP=0&Mana=0&End=0&ATK=0&HSta=0&HStr=0&HDex=0&HAgi=0&HWis=0"
+        "&HInt=0&HCha=0&Clrv=0&Heal=0&Nuke=80"
     ),
     "wis": (
         "https://www.raidloot.com/items/augs?augslot=7%2C8&level=&source="

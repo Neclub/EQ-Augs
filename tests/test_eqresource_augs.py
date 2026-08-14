@@ -7,6 +7,7 @@ from pathlib import Path
 from eq_augs.compare import compare_character
 from eq_augs.eqresource_augs import (
     parse_eqresource_aug_html,
+    parse_eqresource_lore_group,
     parse_expansion_from_eqr_html,
     resolve_item_expansions,
 )
@@ -182,3 +183,32 @@ def test_recommended_not_owned_when_missing_from_inventory():
     assert arms.recommended_id == 175572
     assert arms.recommended_owned is False
     assert 175572 not in report.owned_item_ids
+
+
+def test_parse_eqresource_lore_group_name():
+    snippet = (
+        'Lore Group: <a href="itemsearch.php?loregroup=Intellect or Might of '
+        'Unraveling Order">Intellect or Might of Unraveling Order</a>'
+    )
+    assert (
+        parse_eqresource_lore_group(snippet)
+        == "Intellect or Might of Unraveling Order"
+    )
+    encoded = (
+        'Lore Group: <a href="itemsearch.php?loregroup=Intellect+or+Might+'
+        'of+Unraveling+Order">Intellect or Might of Unraveling Order</a>'
+    )
+    assert (
+        parse_eqresource_lore_group(encoded)
+        == "Intellect or Might of Unraveling Order"
+    )
+    html = """
+    <font size="+1"><b><center>Mystic's Gem of Unraveling Order<br><br></center></b></font>
+    Slot: Arms, Back, Chest, Ear, Face, Feet, Finger, Hands, Head
+    <td>AC:<br>HP:<br>Mana:<br>End:<br></td>
+    <td>115<br>1470<br>2040<br>2040<br></td>
+    Lore Group: <a href="itemsearch.php?loregroup=Intellect or Might of Unraveling Order">Intellect or Might of Unraveling Order</a>
+    """
+    aug = parse_eqresource_aug_html(html, "int", item_id=175573)
+    assert aug is not None
+    assert aug.lore_group == "Intellect or Might of Unraveling Order"

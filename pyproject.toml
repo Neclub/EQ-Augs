@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "eq-augs"
 dynamic = ["version"]
-description = "EverQuest Slot2 type 7/8 aug checker — inventory dumps vs raidloot BiS, ownership/farm list, anniversary filter"
+description = "EverQuest Slot2 type 7/8 aug checker — inventory dumps vs EQ Resource / raidloot BiS, ownership/farm list, anniversary filter"
 requires-python = ">=3.10"
 dependencies = [
     "openpyxl>=3.1",

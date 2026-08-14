@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from eq_augs.aug_stats import STAT_DISPLAY
 from eq_augs.craft_components import craft_component_for_aug, owns_craft_component
 from eq_augs.eqresource_augs import resolve_eqresource_augs
 from eq_augs.parser import (
@@ -33,7 +34,6 @@ from eq_augs.weights import (
     rank_key,
     resolve_weights,
     score_aug,
-    score_delta_contributors,
     uses_feet_overlay,
 )
 
@@ -246,7 +246,7 @@ def upgrade_stat_delta_note(
     secondary_is_shield: bool = False,
     profile: ProfileId = "dex",
 ) -> str:
-    """Format score contributors + HDex/HInt/HWis + AC/HP gains."""
+    """Format score plus Spell Damage / heroic / AC / HP gains."""
     weights = resolve_weights(
         class_abbr,
         gear_slot,
@@ -256,10 +256,10 @@ def upgrade_stat_delta_note(
     cur_score = score_aug(current_aug, weights) if current_aug else 0.0
     rec_score = score_aug(recommended, weights)
     d_score = rec_score - cur_score
-    contributors = score_delta_contributors(
-        current_aug, recommended, weights, top_n=3
-    )
-    contrib_txt = ", ".join(label for label, _ in contributors) if contributors else ""
+
+    cur_stats = current_aug.effective_stats() if current_aug else {}
+    rec_stats = recommended.effective_stats()
+    d_sd = int(rec_stats.get("spell_damage", 0)) - int(cur_stats.get("spell_damage", 0))
 
     cur_focus = current_aug.focus_heroic if current_aug else 0
     cur_ac = current_aug.ac if current_aug else 0
@@ -268,12 +268,9 @@ def upgrade_stat_delta_note(
     d_ac = recommended.ac - cur_ac
     d_hp = recommended.hp - cur_hp
     focus_label = PROFILE_FOCUS_LABEL.get(profile, "HDex")
+    sd_label = STAT_DISPLAY.get("spell_damage", "Spell Damage")
 
-    parts: list[str] = []
-    score_bit = f"{_signed_stat(int(round(d_score)))} score"
-    if contrib_txt:
-        score_bit = f"{score_bit} ({contrib_txt})"
-    parts.append(score_bit)
+    parts: list[str] = [f"{_signed_stat(int(round(d_score)))} score"]
 
     if _uses_ac_primary(
         gear_slot, class_abbr, secondary_is_shield=secondary_is_shield
@@ -283,7 +280,11 @@ def upgrade_stat_delta_note(
             parts.append(f"{_signed_stat(d_hp)} HP")
         if d_focus:
             parts.append(f"{_signed_stat(d_focus)} {focus_label}")
+        if d_sd:
+            parts.append(f"{_signed_stat(d_sd)} {sd_label}")
     else:
+        if d_sd:
+            parts.append(f"{_signed_stat(d_sd)} {sd_label}")
         parts.append(f"{_signed_stat(d_focus)} {focus_label}")
         if d_hp:
             parts.append(f"{_signed_stat(d_hp)} HP")
@@ -333,6 +334,47 @@ def _catalog_aug_for_id(
     return next((a for a in catalog if a.item_id == item_id), None)
 
 
+def _expand_unavailable(
+    catalog: list[AugCandidate],
+    unavailable_ids: set[int] | None,
+) -> set[int]:
+    """Block claimed item ids and every catalog sibling in the same lore group."""
+    blocked = set(unavailable_ids or ())
+    if not blocked:
+        return blocked
+    groups: set[str] = set()
+    by_id = {a.item_id: a for a in catalog}
+    for iid in blocked:
+        aug = by_id.get(iid)
+        if aug is not None:
+            key = aug.lore_group_key()
+            if key:
+                groups.add(key)
+        groups.add(str(iid))
+    extra: set[int] = set()
+    for a in catalog:
+        key = a.lore_group_key()
+        if key and key in groups:
+            extra.add(a.item_id)
+            if key.isdigit():
+                extra.add(int(key))
+    for g in groups:
+        if g.isdigit():
+            extra.add(int(g))
+    return blocked | extra
+
+
+def _claim_item(
+    claimed: set[int],
+    item_id: int | None,
+    catalog: list[AugCandidate],
+) -> None:
+    if not item_id:
+        return
+    claimed.add(item_id)
+    claimed.update(_expand_unavailable(catalog, claimed))
+
+
 def _lookup_current_aug(
     catalog: list[AugCandidate],
     item_id: int | None,
@@ -356,21 +398,23 @@ def pick_best_for_slot(
     class_abbr: str | None = None,
     secondary_is_shield: bool = False,
 ) -> AugCandidate | None:
-    """Best aug for one slot, skipping unavailable item ids."""
+    """Best aug for one slot, skipping unavailable item ids and lore-group siblings."""
     if gear_slot == "Primary":
         return None
     if gear_slot == "Secondary" and not secondary_is_shield:
         return None
 
+    blocked = _expand_unavailable(catalog, unavailable_ids)
+
     if artisans_prize_owned and _is_ear_slot(gear_slot):
         prize = _prize_candidate(catalog)
-        if prize.item_id not in unavailable_ids:
+        if prize.item_id not in blocked:
             return prize
 
     fitted = [
         a
         for a in augs_for_slot(catalog, gear_slot)
-        if a.item_id != ARTISANS_PRIZE_ID and a.item_id not in unavailable_ids
+        if a.item_id != ARTISANS_PRIZE_ID and a.item_id not in blocked
     ]
     if gear_slot == "Secondary" and secondary_is_shield:
         fitted = [a for a in fitted if a.shield_only]
@@ -441,7 +485,7 @@ def build_ideal_loadout(
                 continue
             prize = _prize_candidate(catalog)
             ideal[slot] = prize
-            unavailable.add(prize.item_id)
+            _claim_item(unavailable, prize.item_id, catalog)
             break
 
     for slot in order:
@@ -457,7 +501,7 @@ def build_ideal_loadout(
         )
         ideal[slot] = pick
         if pick is not None:
-            unavailable.add(pick.item_id)
+            _claim_item(unavailable, pick.item_id, catalog)
     return ideal
 
 
@@ -531,12 +575,12 @@ def assign_slot_recommendations(
         cur = current_by_slot.get(slot)
         if cur is not None and cur.item_id == ideal_aug.item_id:
             assigned[slot] = ideal_aug
-            claimed_ids.add(ideal_aug.item_id)
+            _claim_item(claimed_ids, ideal_aug.item_id, catalog)
             continue
         source = _equipped_slot_for(ideal_aug.item_id)
         if source is not None:
             assigned[slot] = ideal_aug
-            claimed_ids.add(ideal_aug.item_id)
+            _claim_item(claimed_ids, ideal_aug.item_id, catalog)
 
     # Non-priority slots claim their ideal when it sits on a priority slot and
     # that priority slot does not need it as its own ideal (displaced piece
@@ -557,7 +601,7 @@ def assign_slot_recommendations(
         if source_ideal is not None and source_ideal.item_id == ideal_aug.item_id:
             continue
         assigned[slot] = ideal_aug
-        claimed_ids.add(ideal_aug.item_id)
+        _claim_item(claimed_ids, ideal_aug.item_id, catalog)
 
     # Keep ideal-loadout pieces where they already sit on general slots —
     # except priority slots holding a non-ideal piece (those stay free for
@@ -583,7 +627,7 @@ def assign_slot_recommendations(
             )
         assigned[slot] = keep
         if keep is not None:
-            claimed_ids.add(keep.item_id)
+            _claim_item(claimed_ids, keep.item_id, catalog)
 
     owned_ideal_ids |= claimed_ids
 
@@ -640,7 +684,7 @@ def assign_slot_recommendations(
         if placed is not None:
             assigned[slot] = placed
             used_missing.add(placed.item_id)
-            claimed_ids.add(placed.item_id)
+            _claim_item(claimed_ids, placed.item_id, catalog)
         elif cur is not None and cur.item_id is not None:
             if cur.item_id in claimed_ids:
                 # Current was moved elsewhere — recommend next best free pick.
@@ -654,7 +698,7 @@ def assign_slot_recommendations(
                 )
                 replacement = assigned[slot]
                 if replacement is not None:
-                    claimed_ids.add(replacement.item_id)
+                    _claim_item(claimed_ids, replacement.item_id, catalog)
             else:
                 assigned[slot] = _catalog_aug_for_id(catalog, cur.item_id)
         else:
@@ -738,7 +782,7 @@ def _finalize_comparison(
             recommended = cur_aug
             move_from_slot = None
 
-    # Lead note with Focus/AC/HP gain when an upgrade is recommended.
+    # Lead note with score / Spell Damage / heroic / AC / HP gain when recommended.
     if status in ("upgrade", "empty") and recommended is not None:
         delta_current = cur_aug if status == "upgrade" else None
         if (

@@ -603,7 +603,7 @@ def test_upgrade_stat_delta_note_hint_label():
         focus_heroic=40,
         ac=90,
         hp=1000,
-        stats={"hint": 40, "ac": 90, "hp": 1000},
+        stats={"hint": 40, "ac": 90, "hp": 1000, "spell_damage": 100},
     )
     stronger = AugCandidate(
         item_id=2,
@@ -612,14 +612,16 @@ def test_upgrade_stat_delta_note_hint_label():
         focus_heroic=55,
         ac=100,
         hp=1200,
-        stats={"hint": 55, "ac": 100, "hp": 1200},
+        stats={"hint": 55, "ac": 100, "hp": 1200, "spell_damage": 118},
     )
     note = upgrade_stat_delta_note(
         weaker, stronger, "Head", "WIZ", profile="int"
     )
     assert "HInt" in note
     assert "+15 HInt" in note
+    assert "+18 Spell Damage" in note
     assert "score" in note
+    assert "score (" not in note
 
 
 def test_upgrade_stat_delta_note_hdex_primary():
@@ -643,6 +645,7 @@ def test_upgrade_stat_delta_note_hdex_primary():
     )
     note = upgrade_stat_delta_note(weaker, stronger, "Head", "ROG")
     assert "score" in note
+    assert "score (" not in note
     assert "+12 HDex" in note
     assert "+333 HP" in note
     assert "+20 AC" in note
@@ -800,3 +803,131 @@ def test_need_to_farm_notes_owned_craft_component():
     )
     assert head_missing.craft_component_name == "Unraveling Focus of Fortitude"
     assert head_missing.craft_component_owned is False
+
+
+_GENERAL_EXCL = frozenset({"Charm", "Range", "Primary", "Secondary", "Ammo"})
+_UNRAVEL_GROUP = "175571"
+
+
+def _unravel_catalog() -> list[AugCandidate]:
+    mystic = AugCandidate(
+        item_id=175573,
+        name="Mystic's Gem of Unraveling Order",
+        profile="int",
+        focus_heroic=61,
+        ac=115,
+        hp=1470,
+        stats={
+            "ac": 115,
+            "hp": 1470,
+            "spell_damage": 118,
+            "hint": 61,
+            "hwis": 61,
+        },
+        excluded_bases=_GENERAL_EXCL,
+        lore=True,
+        lore_group=_UNRAVEL_GROUP,
+    )
+    defender = AugCandidate(
+        item_id=175571,
+        name="Defender's Gem of Unraveling Order",
+        profile="int",
+        focus_heroic=0,
+        ac=115,
+        hp=2040,
+        stats={
+            "ac": 115,
+            "hp": 2040,
+            "spell_damage": 111,
+            "hstr": 61,
+        },
+        excluded_bases=_GENERAL_EXCL,
+        lore=True,
+        lore_group=_UNRAVEL_GROUP,
+    )
+    filler = AugCandidate(
+        item_id=99,
+        name="Filler Gem",
+        profile="int",
+        focus_heroic=10,
+        ac=50,
+        hp=500,
+        stats={"ac": 50, "hp": 500, "spell_damage": 50, "hint": 10},
+        excluded_bases=_GENERAL_EXCL,
+    )
+    return [mystic, defender, filler]
+
+
+def test_lore_group_unique_in_ideal_loadout():
+    catalog = _unravel_catalog()
+    ideal = build_ideal_loadout(
+        ["Head", "Arms"],
+        catalog,
+        artisans_prize_owned=False,
+        class_abbr="WIZ",
+    )
+    ids = {a.item_id for a in ideal.values() if a is not None}
+    assert 175573 in ids
+    assert 175571 not in ids
+    assert 99 in ids
+
+
+def test_lore_group_unique_in_slot_recommendations():
+    catalog = _unravel_catalog()
+    current = {
+        "Head": Slot2Aug(gear_slot="Head", name=None, item_id=None),
+        "Arms": Slot2Aug(gear_slot="Arms", name=None, item_id=None),
+    }
+    assigned = assign_slot_recommendations(
+        ["Head", "Arms"],
+        catalog,
+        artisans_prize_owned=False,
+        class_abbr="WIZ",
+        current_by_slot=current,
+    )
+    ids = {a.item_id for a in assigned.values() if a is not None}
+    assert 175573 in ids
+    assert 175571 not in ids
+
+
+def test_lore_group_blocks_equipped_sibling():
+    catalog = _unravel_catalog()
+    current = {
+        "Head": Slot2Aug(gear_slot="Head", name=None, item_id=None),
+        "Arms": Slot2Aug(
+            gear_slot="Arms",
+            name="Defender's Gem of Unraveling Order",
+            item_id=175571,
+        ),
+    }
+    assigned = assign_slot_recommendations(
+        ["Head", "Arms"],
+        catalog,
+        artisans_prize_owned=False,
+        class_abbr="WIZ",
+        current_by_slot=current,
+    )
+    ids = {a.item_id for a in assigned.values() if a is not None}
+    assert 175573 in ids
+    assert 175571 not in ids
+    assert assigned["Arms"] is None or assigned["Arms"].item_id != 175571
+
+
+def test_lore_group_same_slot_upgrade_ok():
+    catalog = _unravel_catalog()
+    current = {
+        "Head": Slot2Aug(
+            gear_slot="Head",
+            name="Defender's Gem of Unraveling Order",
+            item_id=175571,
+        ),
+    }
+    assigned = assign_slot_recommendations(
+        ["Head"],
+        catalog,
+        artisans_prize_owned=False,
+        class_abbr="WIZ",
+        current_by_slot=current,
+    )
+    assert assigned["Head"] is not None
+    assert assigned["Head"].item_id == 175573

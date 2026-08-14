@@ -19,6 +19,7 @@ from eq_augs.profiles import normalize_profile
 from eq_augs.roster import (
     build_roster,
     discover_folder_character_choices,
+    enrich_folder_choice_classes,
     export_prefix_from_roster,
     paths_for_removal,
     save_character_column_order,
@@ -41,20 +42,27 @@ def _roster_entry_dict(entry) -> dict:
         "character": entry.character,
         "server": entry.server,
         "classAbbr": entry.class_abbr,
+        "classAbbrs": [entry.class_abbr] if entry.class_abbr else [],
         "path": entry.path,
         "displayName": entry.display_name,
     }
 
 
 def _choice_dict(choice) -> dict:
+    abbrs = list(choice.class_abbrs) if choice.class_abbrs else (
+        [choice.class_abbr] if choice.class_abbr else []
+    )
+    paths = [str(p) for p in choice.paths]
     return {
         "personaKey": choice.persona_key,
         "character": choice.character,
         "server": choice.server,
-        "classAbbr": choice.class_abbr,
-        "path": choice.path,
-        "paths": [choice.path],
+        "classAbbr": abbrs[0] if abbrs else None,
+        "classAbbrs": abbrs,
+        "path": paths[0] if paths else choice.path,
+        "paths": paths,
         "summary": choice.summary,
+        "displayName": choice.display_name,
         "serverDisplay": choice.server,
     }
 
@@ -121,6 +129,7 @@ class WebApi:
 
     def discover_folder_choices(self, folder: str) -> dict:
         choices = discover_folder_character_choices(folder)
+        choices = enrich_folder_choice_classes(choices)
         servers = unique_servers(choices)
         return {
             "folder": str(folder),

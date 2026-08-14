@@ -11,6 +11,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable
+from urllib.parse import unquote_plus
 
 from eq_augs.aug_stats import (
     ATTR_BASE,
@@ -25,7 +26,7 @@ from eq_augs.raidloot import AugCandidate, parse_slot_restrictions
 USER_AGENT = "EQ-Augs/0.2 (Slot2 type 7/8 checker; local tool)"
 CACHE_FILENAME = "eqresource_aug_cache.json"
 EXPANSION_CACHE_FILENAME = "eqresource_expansion_cache.json"
-CACHE_STATS_VERSION = 2
+CACHE_STATS_VERSION = 3
 EQRESOURCE_ITEM_URL = "https://items.eqresource.com/items.php?id={item_id}"
 
 _EXPAC_IMG_RE = re.compile(
@@ -404,6 +405,32 @@ def _allowed_from_eqr_slot_text(slot_text: str) -> frozenset[str]:
     return frozenset(allowed)
 
 
+def parse_eqresource_lore_group(html: str) -> str | None:
+    """Lore-group name from an EQ Resource item page (``loregroup=`` / Lore Group:)."""
+    if not html:
+        return None
+    m = re.search(
+        r"itemsearch\.php\?loregroup=([^\"'<&]+)",
+        html,
+        re.IGNORECASE,
+    )
+    if m:
+        name = unquote_plus(m.group(1).replace("+", " "))
+        name = re.sub(r"\s+", " ", name).strip()
+        if name:
+            return name
+    m = re.search(
+        r"Lore Group:\s*(?:<a[^>]*>)?\s*([^<]+)",
+        html,
+        re.IGNORECASE,
+    )
+    if m:
+        name = re.sub(r"\s+", " ", m.group(1)).strip()
+        if name:
+            return name
+    return None
+
+
 def parse_eqresource_aug_html(
     html: str,
     profile: ProfileId,
@@ -454,6 +481,7 @@ def parse_eqresource_aug_html(
         allowed_bases=allowed,
         ear_only=ear_only,
         lore=bool(re.search(r"\bLore\b", html)),
+        lore_group=parse_eqresource_lore_group(html),
         shield_only=shield_only,
         source="EQ Resource",
         stats=stats,
@@ -499,6 +527,10 @@ def fetch_eqresource_aug(
                 allowed_bases=frozenset(entry.get("allowed_bases") or ()),
                 ear_only=bool(entry.get("ear_only", False)),
                 lore=bool(entry.get("lore", False)),
+                lore_group=(
+                    str(entry["lore_group"]).strip() if entry.get("lore_group") else None
+                )
+                or None,
                 shield_only=bool(entry.get("shield_only", False)),
                 source="EQ Resource",
                 stats=stats,
@@ -532,6 +564,7 @@ def fetch_eqresource_aug(
                 "allowed_bases": sorted(aug.allowed_bases),
                 "ear_only": aug.ear_only,
                 "lore": aug.lore,
+                "lore_group": aug.lore_group,
                 "shield_only": aug.shield_only,
                 "stats": dict(aug.stats),
                 "stats_v": CACHE_STATS_VERSION,

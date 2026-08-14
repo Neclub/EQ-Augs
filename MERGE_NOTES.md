@@ -3,13 +3,15 @@
 This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) into
 [Inventory Parser](https://github.com/Neclub/Inventory-Parser) later.
 
-**Standalone version:** `0.3.8`
+**Standalone version:** `0.4.0`
 
 ## Purpose of this app
 
 - Parse EverQuest `*-Inventory.txt` dumps for **equipped type 7/8** augs (usually Slot2;
   socket map may use another dump SlotN).
-- Live-fetch ranked type 7/8 candidates from raidloot.com (Dex / INT / WIS filters).
+- Live-fetch ranked type 7/8 candidates from EQ Resource advanced search
+  (Augmentations, fits slot 7/8); raidloot.com Dex / INT / WIS filters are the
+  fallback. Shield-only Secondary augs still come from raidloot.
 - Recommend BiS per gear slot with **Charm/Range** (and **Feet** when high-AC)
   priority holes; **Primary/Secondary weapons ignored**; **shield Secondary** uses
   Shield Only augs. General slots share the best owned/farmable set.
@@ -28,7 +30,8 @@ This document describes how to merge the **EQ Augs** (Slot2 type 7/8 checker) in
 | `eq_augs.profiles` | `inventory_parser.slot2_augs.profiles` | New; class→Dex/INT/WIS map |
 | `eq_augs.anniversary` | `inventory_parser.slot2_augs.anniversary` | New; Distant Echoes gem filter |
 | `eq_augs.raidloot` | `inventory_parser.slot2_augs.raidloot` | New; fetch/cache/parse |
-| `eq_augs.eqresource_augs` | `inventory_parser.slot2_augs.eqresource_augs` | New; catalog-miss stats + expansion cache |
+| `eq_augs.eqresource_augs` | `inventory_parser.slot2_augs.eqresource_augs` | New; item-page stats, lore groups, expansion cache |
+| `eq_augs.eqresource_search` | `inventory_parser.slot2_augs.eqresource_search` | New; advanced-search catalog (primary) |
 | `eq_augs.item_sockets` | `inventory_parser.slot2_augs.item_sockets` | New; parent ID → type 7/8 dump SlotN |
 | `eq_augs.chest_class` | `inventory_parser.slot2_augs.chest_class` | New; Chest armor → character class |
 | `eq_augs.compare` | `inventory_parser.slot2_augs.compare` | New; loadout + ownership + moves |
@@ -182,7 +185,7 @@ Simplified role focus (class modifiers empty by default):
 |------|-------------|
 | tank | AC, HDex |
 | priest | HWis |
-| pure_caster | Spell Damage, HInt |
+| pure_caster | Spell Damage, HInt, HWis, HDex |
 | melee_dps / hybrid_dps | HDex |
 
 - Packaged tables: `eq_augs/data/weights/{roles,classes,slot_overlays}.json`
@@ -190,12 +193,23 @@ Simplified role focus (class modifiers empty by default):
 - Fit filters (Charm/Range exclusions, shield-only, Ear/Artisan's Prize, anniversary)
   stay orthogonal to scoring. Advanced GUI always surfaces AC / HDex / HInt / HWis /
   Spell Damage; Accuracy / Combat Effects / Shielding / Stun Resist stay excluded.
-- Catalog fetch remains Dex/INT/WIS raidloot filters; weights refine ranking
-  within that catalog.
+- Catalog fetch uses EQ Resource [advanced search](https://items.eqresource.com/itemsearch.php?s=advanced)
+  (type = Augmentations, fits aug slot 7/8) with the same floors as raidloot:
+  INT Spell Damage > 80, Dex HDex > 30, WIS HWis > 35. Item pages supply
+  lore groups and slot restrictions. Raidloot is the fallback if that search
+  fails. Shield-only Secondary augs still come from raidloot's Aug_Shield list.
 
 ## Lore unique assignment / missing BiS loadout
 
-Recommendations treat the character's equipped type 7/8 augs **as a set**:
+Recommendations treat the character's equipped type 7/8 augs **as a set**, and
+only one item from a **lore group** may be equipped at a time (EverQuest
+*Lore Equipped Group*). Example: [Defender's Gem of Unraveling Order](https://items.eqresource.com/items.php?id=175571)
+and [Mystic's Gem of Unraveling Order](https://items.eqresource.com/items.php?id=175573)
+share *Intellect or Might of Unraveling Order* — recommending both on different
+slots is illegal in-game, so claiming one blocks every catalog sibling.
+**Ranked Augs** and **Need to farm** keep one member per lore group (best score
+first). The catalog comes from EQ Resource advanced search (item pages for lore
+group names and slots); raidloot is the fallback.
 
 1. Build an **ideal unique loadout** with **Range → Charm → Feet (when high-AC
    overlay applies) → remaining slots** first (few augs fit those holes).
@@ -210,11 +224,14 @@ Recommendations treat the character's equipped type 7/8 augs **as a set**:
 5. Only **missing** ideal augs are otherwise recommended — empty holes first,
    then non-ideal currents (priority slots before general).
 6. Never recommend an aug that ranks worse than the slot's current aug.
-7. If current aug is missing from the raidloot catalog, look up stats on
+7. If current aug is missing from the catalog, look up stats on
    **EQ Resource** (`items.eqresource.com`) for Focus/AC/HP comparison
    (cached under `%LOCALAPPDATA%\EQ Augs\eqresource_aug_cache.json`).
    Notes no longer append `stats via EQ Resource` when that fallback is used.
    Still `unknown` only when EQ Resource also misses.
+8. Upgrade notes lead with score, then **Spell Damage** (when it changes),
+   heroic focus, HP, and AC. They do not list score-contributor names in
+   parentheses.
 
 Upgrade reports list all graded slots (`upgrade` / `empty` / `unknown` / `bis`).
 BiS rows leave **Upgrade to** blank. Ignored (`no_fit`) slots are omitted.
@@ -322,26 +339,29 @@ No BeautifulSoup — stdlib `html.parser` + regex.
 - `tests/test_compare.py` — Artisan's Prize, Charm/Range/Feet priority moves, displaced Range→Head
 - `tests/test_item_sockets.py` — parent socket map parse + Face evolver Slot4
 - `tests/test_eqresource_augs.py` — EQ Resource stats + expansion parse + ownership
+- `tests/test_eqresource_search.py` — advanced-search table parse + lore-group hydrate
+- `tests/test_roster.py` — class-tagged inventory dumps / folder picker personas
 - `tests/test_anniversary.py` — Distant Echoes gem filter
 - `tests/test_html_export.py` — serialize farm list + EQ Resource URL payload
 - `tests/test_craft_components.py` — affix → Focus/ore mapping + ownership helpers
 - `tests/test_progress.py` — `build_export_bundle(on_progress=…)` monotonic fractions
 
 Use fixture `tests/fixtures/raidloot_dex_sample.html` (no live network in CI).
+Search fixture: `eqresource_search_int_snip.html`.
 Socket fixtures: `raidloot_item_*.html`, `eqresource_item_168096.html`.
 Aug/expansion fixtures: `eqresource_aug_*.html`, `eqresource_chest_*.html`.
 
 ## Suggested merge PR sequence
 
 1. Lift `extract_slot2_augs` + `collect_owned_item_ids` + unit tests into IP `parser.py` (no GUI yet).
-2. Add `slot2_augs` package (profiles, anniversary, raidloot, eqresource, compare) + caches under IP appdata.
+2. Add `slot2_augs` package (profiles, anniversary, raidloot, eqresource search + item pages, compare) + caches under IP appdata.
 3. Extend `ExportBundle` + Excel/HTML writers behind a feature flag/chip.
 4. Add GUI controls (Artisan's Prize, Include Anniversary) and wire `generate_report`.
 5. Delete standalone EQ Augs app or keep as thin launcher that calls IP.
 
 ## Version / branding
 
-- Standalone package name: `eq-augs` (`eq_augs`), version **`0.3.8`**
+- Standalone package name: `eq-augs` (`eq_augs`), version **`0.4.0`**
 - Entry points: `eq-augs`, `eq-augs-gui`, `run_gui.bat`
 - One-file Windows GUI: run `build_exe.bat` → `dist\EQAugs-<version>.exe`
 - Icons: `Icon/Icon.png` / `Icon/report-logo-source.png` → `src/eq_augs/assets/`

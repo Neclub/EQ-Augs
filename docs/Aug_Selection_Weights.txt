@@ -10,7 +10,7 @@ Artisan's Prize, anniversary Distant Echoes gems) are separate from scoring.
 Simplified focus stats:
   tank:        AC (10) > HDex (8)
   priest:      HWis (10)
-  pure_caster: Spell Damage (10) > HInt (8)
+  pure_caster: Spell Damage (10) > HInt/HWis/HDex (1)
   melee_dps / hybrid_dps: HDex (10)
 
 1. ROLE BASE WEIGHTS
@@ -25,7 +25,9 @@ Priest (priest)
 
 Pure Caster (pure_caster)
   Spell Damage         10.00
-  HInt                  8.00
+  HDex                  1.00
+  HInt                  1.00
+  HWis                  1.00
 
 Melee DPS (melee_dps)
   HDex                 10.00
@@ -120,19 +122,27 @@ SHM  role=priest
 
 WIZ  role=pure_caster
   Spell Damage         10.00
-  HInt                  8.00
+  HDex                  1.00
+  HInt                  1.00
+  HWis                  1.00
 
 MAG  role=pure_caster
   Spell Damage         10.00
-  HInt                  8.00
+  HDex                  1.00
+  HInt                  1.00
+  HWis                  1.00
 
 NEC  role=pure_caster
   Spell Damage         10.00
-  HInt                  8.00
+  HDex                  1.00
+  HInt                  1.00
+  HWis                  1.00
 
 ENC  role=pure_caster
   Spell Damage         10.00
-  HInt                  8.00
+  HDex                  1.00
+  HInt                  1.00
+  HWis                  1.00
 
 ROG  role=melee_dps
   HDex                 10.00
